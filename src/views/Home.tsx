@@ -6,8 +6,7 @@ import {
 import moviesData from "../assets/movies.json";
 import MovieCard from "../components/MovieCard";
 import { type Movie } from "../types";
-import Map from "react-map-gl/mapbox";
-
+import Map, { Marker } from "react-map-gl/mapbox";
 function Home() {
   const movies = moviesData as Movie[];
   const queryParams = new URLSearchParams(window.location.search);
@@ -19,6 +18,16 @@ function Home() {
       isUnique(movie, index, self) &&
       matchesCountry(movie, isoFilter),
   );
+
+  const uniqueCountries = filteredMovies.reduce((acc, current) => {
+    const exists = acc.find(
+      (item) => item.origin_country.code === current.origin_country.code,
+    );
+    if (!exists) {
+      return [...acc, current];
+    }
+    return acc;
+  }, [] as Movie[]);
 
   const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -39,6 +48,14 @@ function Home() {
         }}
         mapStyle="mapbox://styles/mapbox/streets-v12"
       >
+        {uniqueCountries.map((movie) => (
+          <Marker
+            key={movie.origin_country.code}
+            longitude={movie.origin_country.coords.lng}
+            latitude={movie.origin_country.coords.lat}
+            anchor="bottom"
+          />
+        ))}
         <section className="o-flex o-sidebar">
           {filteredMovies.map((movie) => (
             <MovieCard key={movie.id} movie={movie} />
