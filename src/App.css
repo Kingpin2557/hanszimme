@@ -1,0 +1,191 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+
+    padding-inline: 2rem;
+    padding-block: 1rem;
+
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+}
+
+html,
+body,
+#root {
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+}
+
+.o-full {
+    width: 100vw;
+    height: 100vh;
+}
+
+.o-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.o-full {
+    width: 100%;
+    height: 100vh;
+}
+
+.o-sidebar {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+
+    padding: 15px;
+
+    height: 100vh;
+
+    overflow-y: auto;
+
+    background-color: white;
+}
+
+.c-card {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid black;
+    color: black;
+
+    width: 500px;
+
+    span {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+
+        width: 35px;
+        aspect-ratio: 16 /9;
+        text-align: center;
+
+        color: white;
+        padding: 0.5rem;
+        border-radius: 2px;
+
+        background-size: cover;
+        background-position: center;
+    }
+
+    p:first-child {
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+
+    img {
+        border-radius: 4px;
+        height: 150px;
+    }
+}
+
+.c-card__info {
+    display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+    gap: 1rem;
+    width: 100%;
+
+    a {
+        padding: 0;
+        width: max-content;
+    }
+}
+
+.c-card__description {
+    p {
+        width: 90%;
+        max-height: 4.5em;
+
+        display: -webkit-box;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+
+        text-overflow: ellipsis;
+        overflow: hidden;
+
+        line-height: 1.5em;
+    }
+}
+.c-card__btn {
+    border-bottom: 1px solid black;
+    width: fit-content;
+}
+
+.c-detail {
+    a {
+        border: 1px solid black;
+        padding-block: 5px;
+        padding-inline: 10px;
+    }
+}
+
+.c-detail__header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+
+    border-radius: 8px;
+
+    margin-top: 2rem;
+
+    img {
+        border-radius: 4px;
+    }
+}
+
+.c-detail__music-container {
+    position: relative;
+    width: 100%;
+    margin-top: 2rem;
+}
+
+.c-detail__iframe {
+    border-radius: 8px;
+    z-index: 1;
+}
+
+.c-detail__iframe-shield {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 14%;
+    z-index: 2;
+
+    /* This makes the shield ignore clicks in a specific zone */
+    /* Adjust these percentages to line up with the Play button */
+    clip-path: polygon(
+        0% 0%,
+        /* Top Left */ 100% 0%,
+        /* Top Right */ 100% 18%,
+        /* Right side, above logo */ 85% 18%,
+        /* Move left to clear logo */ 85% 42%,
+        /* Move down to cover header area */ 100% 42%,
+        /* Move back to right edge */ 100% 42%,
+        /* Bottom of red area */ 0% 42% /* Back to left side below the image */
+    );
+
+    /* For debugging: uncomment the line below to see where the shield is */
+    /* background: rgba(255, 0, 0, 0.3); */
+}
