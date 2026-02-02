@@ -1,3 +1,4 @@
+import CountryFlag from "./CountryFlag";
 import { slugify } from "../script/utils/slugify";
 import { type Movie } from "../types";
 
@@ -6,17 +7,9 @@ interface MovieCardProps {
 }
 
 function MovieCard({ movie }: MovieCardProps) {
-  const flagUrl = `https://flagcdn.com/w640/${movie.origin_country.code.toLowerCase()}.png`;
-
-  const slug = slugify(movie.title);
-
   return (
-    <a href={`/${slug}`} className="c-card">
-      <span
-        style={{
-          backgroundImage: `url(${flagUrl})`,
-        }}
-      ></span>
+    <a href={`/${slugify(movie.title)}`} className="c-card">
+      <CountryFlag code={movie.origin_country.code} />
       <img src={movie.poster_path} alt={`${movie.title} Poster`} />
       <div className="c-card__info">
         <div className="c-card__description">

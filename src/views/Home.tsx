@@ -19,16 +19,13 @@ function Home() {
       matchesCountry(movie, isoFilter),
   );
 
-  const uniqueCountries = filteredMovies.reduce((acc, current) => {
-    const exists = acc.find(
-      (item) => item.origin_country.code === current.origin_country.code,
-    );
-    if (!exists) {
-      return [...acc, current];
-    }
-    return acc;
-  }, [] as Movie[]);
-
+  const uniqueCountries = filteredMovies.filter(
+    (movie, index, self) =>
+      index ===
+      self.findIndex(
+        (m) => m.origin_country.code === movie.origin_country.code,
+      ),
+  );
   const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
   return (
