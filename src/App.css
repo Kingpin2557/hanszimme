@@ -113,16 +113,21 @@ body,
 
 .o-sidebar {
     position: absolute;
-    top: 10px;
-    right: 20px;
+    top: 50%;
+    right: 50px;
 
-    padding: 15px;
-
-    height: 100vh;
-
-    overflow-y: auto;
+    transform: translateY(-50%);
+    padding-block: 15px;
+    height: min-content;
 
     background-color: white;
+    border-radius: 10px;
+}
+
+.o-scroll {
+    height: 700px;
+
+    overflow-y: auto;
 }
 
 .c-card__description {
@@ -147,7 +152,6 @@ body,
 
 .c-detail {
     a {
-        border: 1px solid black;
         padding-block: 5px;
         padding-inline: 10px;
     }
@@ -175,6 +179,7 @@ body,
 
 .c-detail__iframe {
     border-radius: 8px;
+    height: 300px;
     z-index: 1;
 }
 
@@ -183,11 +188,9 @@ body,
     top: 0;
     left: 0;
     width: 100%;
-    height: 14%;
+    height: 35%;
     z-index: 2;
 
-    /* This makes the shield ignore clicks in a specific zone */
-    /* Adjust these percentages to line up with the Play button */
     clip-path: polygon(
         0% 0%,
         /* Top Left */ 100% 0%,
@@ -196,9 +199,14 @@ body,
         /* Move left to clear logo */ 85% 42%,
         /* Move down to cover header area */ 100% 42%,
         /* Move back to right edge */ 100% 42%,
-        /* Bottom of red area */ 0% 42% /* Back to left side below the image */
+        /* Bottom of red area */ 0% 42%
     );
 
-    /* For debugging: uncomment the line below to see where the shield is */
-    /* background: rgba(255, 0, 0, 0.3); */
+    pointer-events: auto;
+    touch-action: none;
+}
+
+.mapboxgl-ctrl-bottom-right,
+.mapboxgl-ctrl-bottom-left {
+    display: none !important;
 }

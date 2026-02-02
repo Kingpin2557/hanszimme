@@ -1,28 +1,24 @@
-import { useRef, useEffect } from "react";
-import {
-  useSearchParams,
-  useParams,
-  useLocation,
-  Link,
-} from "react-router-dom";
+import { useRef } from "react";
+import { useSearchParams, useParams, useLocation } from "react-router-dom";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
+import { useMapCamera } from "../hooks/useMapCamera";
 
 import {
   hasValidPoster,
   isUnique,
   matchesCountry,
+  hasTidalEmbed,
 } from "../script/utils/movieFiltes";
 import moviesData from "../assets/movies.json";
-import MovieCard from "../components/MovieCard";
-import Detail from "../components/Detail";
 import { type Movie } from "../types";
 import { slugify } from "../script/utils/slugify";
+import Sidebar from "../components/Sidebar";
 
-const INITIAL_POS = {
+const initialPos = {
   longitude: 3.72,
   latitude: 51.05,
   zoom: 2,
-  padding: { top: 0, bottom: 0, left: 0, right: 600 },
+  padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
 
 function Home() {
@@ -33,82 +29,60 @@ function Home() {
   const iso = params.get("iso")?.toLowerCase() ?? "";
 
   const allMovies = moviesData as Movie[];
-  const selectedMovie = allMovies.find((m) => slugify(m.title) === movieSlug);
+
+  const selectedMovie = allMovies.find(
+    (movie) => slugify(movie.title) === decodeURIComponent(movieSlug ?? ""),
+  );
 
   const list = allMovies.filter(
-    (m, i, self) =>
-      hasValidPoster(m) && isUnique(m, i, self) && matchesCountry(m, iso),
+    (movie, i, self) =>
+      hasValidPoster(movie) &&
+      isUnique(movie, i, self) &&
+      matchesCountry(movie, iso) &&
+      hasTidalEmbed(movie),
   );
 
   const markers = list.filter(
-    (m, i, self) =>
+    (movie, i, self) =>
       i ===
-      self.findIndex((x) => x.origin_country.code === m.origin_country.code),
+      self.findIndex(
+        (x) => x.origin_country.code === movie.origin_country.code,
+      ),
   );
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    if (!iso) {
-      map.flyTo({
-        center: [INITIAL_POS.longitude, INITIAL_POS.latitude],
-        zoom: INITIAL_POS.zoom,
-      });
-    } else if (markers.length === 1) {
-      const { lng, lat } = markers[0].origin_country.coords;
-      map.flyTo({ center: [lng, lat], zoom: 5 });
-    } else if (markers.length > 1) {
-      const lngs = markers.map((m) => m.origin_country.coords.lng);
-      const lats = markers.map((m) => m.origin_country.coords.lat);
-      map.fitBounds(
-        [
-          [Math.min(...lngs), Math.min(...lats)],
-          [Math.max(...lngs), Math.max(...lats)],
-        ],
-        {
-          padding: { top: 50, bottom: 50, left: 50, right: 650 },
-          duration: 1500,
-        },
-      );
-    }
-  }, [iso, markers]);
+  useMapCamera(mapRef, iso, markers);
 
   return (
     <div className="o-full">
       <Map
         ref={mapRef}
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
-        initialViewState={INITIAL_POS}
-        mapStyle="mapbox://styles/mapbox/streets-v12"
+        initialViewState={initialPos}
+        mapStyle="mapbox://styles/kingpin2557/cml40g6g1009y01qxeyw7etjg"
         style={{ width: "100%", height: "100%" }}
       >
-        {markers.map((m) => (
+        {markers.map((movie) => (
           <Marker
-            key={m.origin_country.code}
-            longitude={m.origin_country.coords.lng}
-            latitude={m.origin_country.coords.lat}
+            key={movie.origin_country.code}
+            longitude={movie.origin_country.coords.lng}
+            latitude={movie.origin_country.coords.lat}
             onClick={(e) => {
               e.originalEvent.stopPropagation();
-              setParams({ iso: m.origin_country.code.toLowerCase() });
+              setParams({ iso: movie.origin_country.code.toLowerCase() });
             }}
           />
         ))}
 
-        <section className="o-flex o-sidebar">
-          {movieSlug ? (
-            selectedMovie ? (
-              <Detail movie={selectedMovie} />
-            ) : (
-              <p>Not found</p>
-            )
-          ) : (
-            list.map((m) => (
-              <Link key={m.id} to={`/${slugify(m.title)}${location.search}`}>
-                <MovieCard movie={m} />
-              </Link>
-            ))
-          )}
+        <section className="o-sidebar">
+          <div className="o-flex o-scroll">
+            <Sidebar
+              slug={movieSlug}
+              movie={selectedMovie}
+              iso={iso}
+              movies={list}
+              search={location.search}
+            />
+          </div>
         </section>
       </Map>
     </div>

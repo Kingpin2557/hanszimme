@@ -1,19 +1,26 @@
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { type Movie } from "../types";
-import { Link, useLocation } from "react-router-dom"; // New friends!
 
 interface DetailProps {
   movie: Movie;
 }
 
 function Detail({ movie }: DetailProps) {
-  const location = useLocation(); // This holds the "?iso=..." part
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const iso = params.get("iso");
+
+  const backPath = iso ? `/?iso=${iso}` : "/";
 
   return (
     <section className="c-detail">
-      {/* This link goes back but KEEPS the country filter active! */}
-      <Link to={`/${location.search}`} className="c-detail__back">
+      <div
+        className="c-detail__back"
+        onClick={() => navigate(backPath)}
+        style={{ cursor: "pointer" }}
+      >
         ← Back to List
-      </Link>
+      </div>
 
       <div className="c-detail__header">
         <img src={movie.poster_path} alt={movie.title} />
