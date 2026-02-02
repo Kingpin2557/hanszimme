@@ -47,7 +47,6 @@ function Detail() {
             src={movie.tidal_album.embed_link}
             width="100%"
             height="450"
-            frameBorder="0"
             allow="encrypted-media"
             className="c-detail__iframe"
           ></iframe>
