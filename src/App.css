@@ -51,6 +51,7 @@ body,
     padding: 15px;
 
     height: 100vh;
+    width: 700px;
 
     overflow-y: auto;
 
@@ -68,8 +69,6 @@ body,
     border-radius: 8px;
     border: 1px solid black;
     color: black;
-
-    width: 500px;
 
     span {
         position: absolute;

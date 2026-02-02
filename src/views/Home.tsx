@@ -1,5 +1,10 @@
 import { useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import {
+  useSearchParams,
+  useParams,
+  useLocation,
+  Link,
+} from "react-router-dom";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 
 import {
@@ -9,9 +14,11 @@ import {
 } from "../script/utils/movieFiltes";
 import moviesData from "../assets/movies.json";
 import MovieCard from "../components/MovieCard";
+import Detail from "../components/Detail";
 import { type Movie } from "../types";
+import { slugify } from "../script/utils/slugify";
 
-const initialPos = {
+const INITIAL_POS = {
   longitude: 3.72,
   latitude: 51.05,
   zoom: 2,
@@ -20,22 +27,23 @@ const initialPos = {
 
 function Home() {
   const mapRef = useRef<MapRef>(null);
+  const location = useLocation();
+  const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
   const iso = params.get("iso")?.toLowerCase() ?? "";
 
-  const list = (moviesData as Movie[]).filter(
-    (movie, index, self) =>
-      hasValidPoster(movie) &&
-      isUnique(movie, index, self) &&
-      matchesCountry(movie, iso),
+  const allMovies = moviesData as Movie[];
+  const selectedMovie = allMovies.find((m) => slugify(m.title) === movieSlug);
+
+  const list = allMovies.filter(
+    (m, i, self) =>
+      hasValidPoster(m) && isUnique(m, i, self) && matchesCountry(m, iso),
   );
 
   const markers = list.filter(
-    (marker, index, self) =>
-      index ===
-      self.findIndex(
-        (x) => x.origin_country.code === marker.origin_country.code,
-      ),
+    (m, i, self) =>
+      i ===
+      self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
 
   useEffect(() => {
@@ -44,20 +52,15 @@ function Home() {
 
     if (!iso) {
       map.flyTo({
-        center: [initialPos.longitude, initialPos.latitude],
-        zoom: initialPos.zoom,
+        center: [INITIAL_POS.longitude, INITIAL_POS.latitude],
+        zoom: INITIAL_POS.zoom,
       });
     } else if (markers.length === 1) {
-      map.flyTo({
-        center: [
-          markers[0].origin_country.coords.lng,
-          markers[0].origin_country.coords.lat,
-        ],
-        zoom: 5,
-      });
+      const { lng, lat } = markers[0].origin_country.coords;
+      map.flyTo({ center: [lng, lat], zoom: 5 });
     } else if (markers.length > 1) {
-      const lngs = markers.map((marker) => marker.origin_country.coords.lng);
-      const lats = markers.map((marker) => marker.origin_country.coords.lat);
+      const lngs = markers.map((m) => m.origin_country.coords.lng);
+      const lats = markers.map((m) => m.origin_country.coords.lat);
       map.fitBounds(
         [
           [Math.min(...lngs), Math.min(...lats)],
@@ -76,26 +79,36 @@ function Home() {
       <Map
         ref={mapRef}
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
-        initialViewState={initialPos}
+        initialViewState={INITIAL_POS}
         mapStyle="mapbox://styles/mapbox/streets-v12"
         style={{ width: "100%", height: "100%" }}
       >
-        {markers.map((marker) => (
+        {markers.map((m) => (
           <Marker
-            key={marker.origin_country.code}
-            longitude={marker.origin_country.coords.lng}
-            latitude={marker.origin_country.coords.lat}
+            key={m.origin_country.code}
+            longitude={m.origin_country.coords.lng}
+            latitude={m.origin_country.coords.lat}
             onClick={(e) => {
               e.originalEvent.stopPropagation();
-              setParams({ iso: marker.origin_country.code.toLowerCase() });
+              setParams({ iso: m.origin_country.code.toLowerCase() });
             }}
           />
         ))}
 
         <section className="o-flex o-sidebar">
-          {list.map((m) => (
-            <MovieCard key={m.id} movie={m} />
-          ))}
+          {movieSlug ? (
+            selectedMovie ? (
+              <Detail movie={selectedMovie} />
+            ) : (
+              <p>Not found</p>
+            )
+          ) : (
+            list.map((m) => (
+              <Link key={m.id} to={`/${slugify(m.title)}${location.search}`}>
+                <MovieCard movie={m} />
+              </Link>
+            ))
+          )}
         </section>
       </Map>
     </div>

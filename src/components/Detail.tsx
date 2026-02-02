@@ -1,33 +1,17 @@
-import movieData from "../assets/movies.json";
 import { type Movie } from "../types";
-import { useParams, Link } from "react-router-dom";
-import { slugify } from "../script/utils/slugify";
+import { Link, useLocation } from "react-router-dom"; // New friends!
 
-const movies = movieData as Movie[];
+interface DetailProps {
+  movie: Movie;
+}
 
-function Detail() {
-  const { name } = useParams<{ name: string }>();
-
-  const movie = movies.find((movie) => {
-    const slug = slugify(movie.title);
-
-    return slug === name;
-  });
-
-  if (!movie) {
-    return (
-      <main style={{ color: "white", padding: "2rem" }}>
-        <h1>Movie not found</h1>
-        <Link to="/" style={{ color: "lightblue" }}>
-          Back to List
-        </Link>
-      </main>
-    );
-  }
+function Detail({ movie }: DetailProps) {
+  const location = useLocation(); // This holds the "?iso=..." part
 
   return (
     <section className="c-detail">
-      <Link to="/" className="c-detail__back">
+      {/* This link goes back but KEEPS the country filter active! */}
+      <Link to={`/${location.search}`} className="c-detail__back">
         ← Back to List
       </Link>
 
@@ -39,7 +23,6 @@ function Detail() {
         </div>
       </div>
 
-      {/* Tidal Embed Section */}
       {movie.tidal_album?.embed_link && (
         <div className="c-detail__music-container">
           <iframe
@@ -50,7 +33,6 @@ function Detail() {
             allow="encrypted-media"
             className="c-detail__iframe"
           ></iframe>
-
           <div className="c-detail__iframe-shield"></div>
         </div>
       )}
