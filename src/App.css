@@ -27,6 +27,10 @@ body,
     padding: 0;
 }
 
+header {
+    display: flex;
+}
+
 .o-full {
     width: 100vw;
     height: 100vh;
@@ -125,9 +129,14 @@ body,
 }
 
 .o-scroll {
-    height: 700px;
+    height: 600px;
 
     overflow-y: auto;
+}
+
+.o-header {
+    display: flex;
+    justify-content: space-between;
 }
 
 .c-card__description {
@@ -163,8 +172,6 @@ body,
     gap: 2rem;
 
     border-radius: 8px;
-
-    margin-top: 2rem;
 
     img {
         border-radius: 4px;

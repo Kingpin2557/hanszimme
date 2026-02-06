@@ -1,7 +1,8 @@
 import { useRef } from "react";
-import { useSearchParams, useParams, useLocation } from "react-router-dom";
+import { useSearchParams, useParams } from "react-router-dom";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../hooks/useMapCamera";
+import SidebarHeader from "../components/SidebarHeader";
 
 import {
   hasValidPoster,
@@ -23,31 +24,25 @@ const initialPos = {
 
 function Home() {
   const mapRef = useRef<MapRef>(null);
-  const location = useLocation();
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
   const iso = params.get("iso")?.toLowerCase() ?? "";
 
   const allMovies = moviesData as Movie[];
-
-  const selectedMovie = allMovies.find(
-    (movie) => slugify(movie.title) === decodeURIComponent(movieSlug ?? ""),
-  );
+  const selectedMovie = allMovies.find((m) => slugify(m.title) === movieSlug);
 
   const list = allMovies.filter(
-    (movie, i, self) =>
-      hasValidPoster(movie) &&
-      isUnique(movie, i, self) &&
-      matchesCountry(movie, iso) &&
-      hasTidalEmbed(movie),
+    (m, i, self) =>
+      hasValidPoster(m) &&
+      isUnique(m, i, self) &&
+      matchesCountry(m, iso) &&
+      hasTidalEmbed(m),
   );
 
   const markers = list.filter(
-    (movie, i, self) =>
+    (m, i, self) =>
       i ===
-      self.findIndex(
-        (x) => x.origin_country.code === movie.origin_country.code,
-      ),
+      self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
 
   useMapCamera(mapRef, iso, markers);
@@ -61,28 +56,27 @@ function Home() {
         mapStyle="mapbox://styles/kingpin2557/cml40g6g1009y01qxeyw7etjg"
         style={{ width: "100%", height: "100%" }}
       >
-        {markers.map((movie) => (
+        {markers.map((m) => (
           <Marker
-            key={movie.origin_country.code}
-            longitude={movie.origin_country.coords.lng}
-            latitude={movie.origin_country.coords.lat}
-            onClick={(e) => {
-              e.originalEvent.stopPropagation();
-              setParams({ iso: movie.origin_country.code.toLowerCase() });
-            }}
+            key={m.origin_country.code}
+            longitude={m.origin_country.coords.lng}
+            latitude={m.origin_country.coords.lat}
+            onClick={() =>
+              setParams({ iso: m.origin_country.code.toLowerCase() })
+            }
           />
         ))}
 
         <section className="o-sidebar">
-          <div className="o-flex o-scroll">
-            <Sidebar
-              slug={movieSlug}
-              movie={selectedMovie}
-              iso={iso}
-              movies={list}
-              search={location.search}
-            />
-          </div>
+          <Sidebar slug={movieSlug} movie={selectedMovie} movies={list}>
+            <header className="o-header">
+              <SidebarHeader
+                movieSlug={movieSlug}
+                iso={iso}
+                selectedMovie={selectedMovie}
+              />
+            </header>
+          </Sidebar>
         </section>
       </Map>
     </div>

@@ -4,48 +4,44 @@ import Detail from "./Detail";
 import { type Movie } from "../types";
 import { slugify } from "../script/utils/slugify";
 
-type Sidebar = {
+type SidebarProps = {
   slug?: string;
   movie?: Movie;
-  iso: string;
   movies: Movie[];
-  search: string;
+  children?: React.ReactNode;
 };
 
-function SidebarContent({ slug, movie, iso, movies }: Sidebar) {
+function SidebarContent({ slug, movie, movies, children }: SidebarProps) {
   const navigate = useNavigate();
 
-  if (slug) {
-    return movie ? <Detail movie={movie} /> : <p>Movie not found</p>;
-  }
+  const handleMovieClick = (m: Movie) => {
+    const countryCode = m.origin_country.code.toLowerCase();
+    navigate(`/${slugify(m.title)}?iso=${countryCode}`);
+  };
 
   return (
     <>
-      {iso && (
-        <div
-          className="c-sidebar__clear"
-          onClick={() => navigate("/")}
-          style={{ cursor: "pointer" }}
-        >
-          <p>← Show all countries</p>
+      {children}
+      {slug ? (
+        movie ? (
+          <Detail movie={movie} />
+        ) : (
+          <p>Movie not found</p>
+        )
+      ) : (
+        <div className="o-scroll o-flex">
+          {movies.map((m) => (
+            <div
+              key={m.id}
+              className="c-sidebar__card-wrapper"
+              onClick={() => handleMovieClick(m)}
+            >
+              <MovieCard movie={m} />
+            </div>
+          ))}
         </div>
       )}
-      {movies.map((movie: Movie) => (
-        <div
-          key={movie.id}
-          className="c-sidebar__card-wrapper"
-          onClick={() =>
-            navigate(
-              `/${slugify(movie.title)}?iso=${movie.origin_country.code.toLowerCase()}`,
-            )
-          }
-          style={{ cursor: "pointer", display: "block" }}
-        >
-          <MovieCard movie={movie} />
-        </div>
-      ))}
     </>
   );
 }
-
 export default SidebarContent;
