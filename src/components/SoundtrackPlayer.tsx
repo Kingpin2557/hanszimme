@@ -20,8 +20,6 @@ export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -88,7 +86,6 @@ export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
 
   return (
     <div className="c-player">
-      {/* Album Art/Info omitted for brevity, same as before */}
       <ul className="c-player__tracks">
         {tracks.map((track) => (
           <li key={track.id}>
@@ -99,6 +96,9 @@ export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
                 <PlayIcon />
               )}
               {track.title}
+              <span className="c-player__time">
+                {formatTime((track.durationMs ?? 0) / 1000)}
+              </span>
             </button>
           </li>
         ))}
@@ -106,11 +106,9 @@ export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
       <audio
         ref={audioRef}
         crossOrigin="anonymous"
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
         onPlaying={() => {
           setIsPlaying(true);
-          // Only now connect to destination to prevent silent pipe
+          if (album?.artwork) logAlbumGradient(album.artwork);
           analyserRef.current?.connect(audioCtxRef.current!.destination);
           audioCtxRef.current?.resume();
           startLogging();
@@ -118,7 +116,7 @@ export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
         onPause={() => {
           setIsPlaying(false);
           stopLogging();
-          analyserRef.current?.disconnect(); // Mute/Disconnect to safely pause
+          analyserRef.current?.disconnect();
         }}
         onEnded={() => {
           const idx = tracks.findIndex((t) => t.id === currentId);
