@@ -38,23 +38,76 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Audio graph (keep stable)
+  // WebAudio graph
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const rawRef = useRef<Uint8Array | null>(null);
+  const rawRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
 
   // Logging
-  const rafRef = useRef<number>(0);
+  const rafRef = useRef<number | null>(null);
   const lastSendMsRef = useRef<number>(0);
-  const LOG_EVERY_MS = 50; // ~20 packets/sec
-  const activeBandsCount = 16;
+
+  const LOG_EVERY_MS = 50;
+  const activeBandsCount: number = 16;
+
+  function stopLogging() {
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    rafRef.current = null;
+  }
+
+  function startLogging() {
+    const analyser = analyserRef.current;
+    const raw = rawRef.current;
+    if (!analyser || !raw) return;
+
+    const tick = () => {
+      analyser.getByteFrequencyData(raw);
+
+      const now = performance.now();
+      if (now - lastSendMsRef.current >= LOG_EVERY_MS) {
+        lastSendMsRef.current = now;
+
+        const binCount = raw.length;
+        let sum = 0;
+
+        const bands: string[] = new Array(activeBandsCount);
+
+        for (let b = 0; b < activeBandsCount; b++) {
+          const t = activeBandsCount === 1 ? 0 : b / (activeBandsCount - 1);
+          const idx = Math.min(
+            binCount - 1,
+            Math.max(0, Math.floor(t * (binCount - 1))),
+          );
+          const v = raw[idx] / 255;
+          sum += v;
+          bands[b] = v.toFixed(3);
+        }
+
+        const level = (sum / activeBandsCount).toFixed(3);
+        console.log(`HZFFT|${level}|${bands.join(",")}`);
+      }
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  }
 
   function ensureGraphInitialized() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (audioCtxRef.current && analyserRef.current && sourceRef.current) return;
+    // MediaElementSource is one-per-media-element; keep it stable.
+    if (
+      audioCtxRef.current &&
+      analyserRef.current &&
+      sourceRef.current &&
+      rawRef.current
+    )
+      return;
 
     const ctx = new AudioContext();
     const source = ctx.createMediaElementSource(audio);
@@ -69,32 +122,38 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     audioCtxRef.current = ctx;
     analyserRef.current = analyser;
     sourceRef.current = source;
-
     rawRef.current = new Uint8Array(analyser.frequencyBinCount);
   }
 
-  function teardownGraph() {
-    stopLogging();
-    try {
-      analyserRef.current?.disconnect();
-    } catch {}
-    try {
-      sourceRef.current?.disconnect();
-    } catch {}
-    try {
-      audioCtxRef.current?.close();
-    } catch {}
-
-    analyserRef.current = null;
-    sourceRef.current = null;
-    audioCtxRef.current = null;
-    rawRef.current = null;
+  async function resumeAudioContextIfNeeded() {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
+    if (ctx.state !== "running") {
+      await ctx.resume().catch(() => {});
+    }
   }
 
   useEffect(() => {
     return () => {
-      cancelAnimationFrame(rafRef.current);
-      teardownGraph();
+      stopLogging();
+
+      try {
+        analyserRef.current?.disconnect();
+      } catch {}
+
+      try {
+        sourceRef.current?.disconnect();
+      } catch {}
+
+      const ctx = audioCtxRef.current;
+      audioCtxRef.current = null;
+      analyserRef.current = null;
+      sourceRef.current = null;
+      rawRef.current = null;
+
+      if (ctx) {
+        ctx.close().catch(() => {});
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -118,70 +177,16 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
-  function stopLogging() {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = 0;
-  }
-
-  async function resumeAudioContextIfNeeded() {
-    const ctx = audioCtxRef.current;
-    if (!ctx) return;
-    if (ctx.state !== "running") {
-      try {
-        await ctx.resume();
-      } catch {}
-    }
-  }
-
-  function startLogging() {
-    const analyser = analyserRef.current;
-    const raw = rawRef.current;
-    if (!analyser || !raw) return;
-
-    const tick = () => {
-      analyser.getByteFrequencyData(raw);
-
-      const now = performance.now();
-      if (now - lastSendMsRef.current >= LOG_EVERY_MS) {
-        lastSendMsRef.current = now;
-
-        const binCount = raw.length;
-        let sum = 0;
-
-        // Evenly sample bins -> N bands
-        const bands: string[] = new Array(activeBandsCount);
-        for (let b = 0; b < activeBandsCount; b++) {
-          const t = activeBandsCount === 1 ? 0 : b / (activeBandsCount - 1);
-          const idx = Math.min(
-            binCount - 1,
-            Math.max(0, Math.floor(t * (binCount - 1))),
-          );
-          const v = raw[idx] / 255;
-          sum += v;
-          bands[b] = v.toFixed(3);
-        }
-
-        const level = (sum / activeBandsCount).toFixed(3);
-        console.log(`HZFFT|${level}|${bands.join(",")}`);
-      }
-
-      rafRef.current = requestAnimationFrame(tick);
-    };
-
-    rafRef.current = requestAnimationFrame(tick);
-  }
-
   async function selectTrack(track: Track) {
     const audio = audioRef.current;
     if (!audio) return;
 
     ensureGraphInitialized();
 
+    // Toggle current track
     if (currentId === track.id) {
       if (audio.paused) {
-        try {
-          await resumeAudioContextIfNeeded();
-        } catch {}
+        await resumeAudioContextIfNeeded().catch(() => {});
         audio
           .play()
           .catch((err) => console.log("play() failed (toggle):", err));
@@ -204,7 +209,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     try {
       await audio.play();
       await resumeAudioContextIfNeeded();
-      // onPlay handler will startLogging + setIsPlaying(true)
+      // onPlay will startLogging + setIsPlaying
     } catch (err) {
       console.log("play() failed:", err);
     }
@@ -285,9 +290,15 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         preload="metadata"
         onPlay={() => {
           setIsPlaying(true);
-          resumeAudioContextIfNeeded().finally(() => {
-            startLogging();
-          });
+          resumeAudioContextIfNeeded()
+            .finally(() => {
+              ensureGraphInitialized();
+              startLogging();
+            })
+            .catch(() => {
+              ensureGraphInitialized();
+              startLogging();
+            });
         }}
         onPause={() => {
           setIsPlaying(false);
