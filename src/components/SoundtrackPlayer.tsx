@@ -306,46 +306,43 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       <audio
         ref={audioRef}
+        crossOrigin="anonymous"
         preload="metadata"
+        onLoadStart={() => {
+          console.log("AUDIO: load started");
+        }}
+        onLoadedMetadata={(e) => {
+          console.log("AUDIO: metadata loaded", e.currentTarget.duration);
+
+          const a = e.currentTarget;
+          setDuration(a.duration || 0);
+        }}
+        onCanPlay={() => {
+          console.log("AUDIO: can play");
+        }}
         onPlay={() => {
+          console.log("AUDIO: PLAY EVENT FIRED");
+
           setIsPlaying(true);
-          resumeAudioContextIfNeeded()
-            .finally(() => {
-              ensureGraphInitialized();
-              startLogging();
-            })
-            .catch(() => {
-              ensureGraphInitialized();
-              startLogging();
-            });
+
+          resumeAudioContextIfNeeded().finally(() => {
+            ensureGraphInitialized();
+            startLogging();
+          });
+        }}
+        onPlaying={() => {
+          console.log("AUDIO: ACTUALLY PLAYING");
         }}
         onPause={() => {
+          console.log("AUDIO: PAUSED");
           setIsPlaying(false);
           stopLogging();
         }}
         onEnded={() => {
-          const index = tracks.findIndex((t) => t.id === currentId);
-          const next = tracks[index + 1];
-          if (next) selectTrack(next);
-          else {
-            setIsPlaying(false);
-            stopLogging();
-          }
-        }}
-        onLoadedMetadata={(e) => {
-          const a = e.currentTarget;
-          setDuration(a.duration || 0);
-        }}
-        onTimeUpdate={(e) => {
-          const a = e.currentTarget;
-          setCurrentTime(a.currentTime);
+          console.log("AUDIO: ENDED");
         }}
         onError={(e) => {
-          const a = e.currentTarget;
-          console.log("audio error:", {
-            code: a.error?.code,
-            message: a.error?.message || `MEDIA_ERR_${a.error?.code ?? "?"}`,
-          });
+          console.log("AUDIO ERROR", e.currentTarget.error);
         }}
       />
     </div>
