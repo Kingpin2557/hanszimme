@@ -118,12 +118,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
     stopLogging();
     audio.pause();
-
-    // Reset audio element for new track
     audio.src = "";
     audio.load();
 
-    // Initialize audio graph
     initAudioGraph();
 
     // Resume audio context on user interaction
@@ -135,7 +132,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       console.error("Failed to resume audio context:", err);
     }
 
-    // If it's the same track and we're already playing, just play
     if (currentId === track.id) {
       try {
         await audio.play();
@@ -144,15 +140,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       }
       return;
     }
-
     setCurrentId(track.id);
     audio.src = `${API}/api/preview/${track.id}`;
-
-    // Wait for the audio to be ready before playing
-    await new Promise((resolve) => {
-      audio.oncanplaythrough = resolve;
-      audio.load();
-    });
+    console.log("Audio URL:", `${API}/api/preview/${track.id}`);
 
     try {
       await audio.play();
