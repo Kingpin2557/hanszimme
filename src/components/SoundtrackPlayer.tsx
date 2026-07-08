@@ -174,6 +174,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
     await buildAnalyserFresh();
 
+    console.log("location.href:", window.location.href);
+    console.log("location.origin:", window.location.origin);
+
     audio
       .play()
       .then(() => {
