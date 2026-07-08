@@ -43,6 +43,12 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   const activeBandsCount = 16;
 
+  // Sync isPlaying state with document class for the CSS background dissolve
+  useEffect(() => {
+    document.documentElement.classList.toggle("is-playing", isPlaying);
+    return () => document.documentElement.classList.remove("is-playing");
+  }, [isPlaying]);
+
   function stopLogging() {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
@@ -80,11 +86,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // 1. Stop and clear
     stopLogging();
     audio.pause();
     audio.src = "";
-    audio.load(); // Force the widget to drop the current stream
+    audio.load();
 
     initAudioGraph();
 
@@ -92,17 +97,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       await audio.play();
       return;
     }
-
     setCurrentId(track.id);
-    // 2. Set new source
     audio.src = `${API}/api/preview/${track.id}`;
-
-    // 3. Ensure the browser widget detects the change
-    try {
-      await audio.play();
-    } catch (err) {
-      console.log("play() failed:", err);
-    }
+    await audio.play();
   }
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
