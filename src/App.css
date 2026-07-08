@@ -389,7 +389,7 @@ header {
     gap: var(--space-xs);
     width: 100%;
 
-    padding: var(--space-2xs) var(--space-xs);
+    padding: var(--space-xs) var(--space-xs);
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
