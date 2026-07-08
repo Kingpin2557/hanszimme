@@ -99,6 +99,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
     setCurrentId(track.id);
     audio.src = `${API}/api/preview/${track.id}`;
+    console.log("Audio URL:", `${API}/api/preview/${track.id}`);
     await audio.play();
   }
 
