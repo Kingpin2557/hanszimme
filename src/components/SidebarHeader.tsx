@@ -1,13 +1,20 @@
 import { useNavigate } from "react-router-dom";
 import { type Movie } from "../types";
+import { ArrowLeftIcon } from "./icons";
 
 type SidebarHeaderProps = {
   movieSlug?: string;
   iso: string;
+  countryName?: string;
   selectedMovie?: Movie;
 };
 
-function SidebarHeader({ movieSlug, iso, selectedMovie }: SidebarHeaderProps) {
+function SidebarHeader({
+  movieSlug,
+  iso,
+  countryName,
+  selectedMovie,
+}: SidebarHeaderProps) {
   const navigate = useNavigate();
 
   if (movieSlug) {
@@ -15,7 +22,8 @@ function SidebarHeader({ movieSlug, iso, selectedMovie }: SidebarHeaderProps) {
       <>
         <h1>{selectedMovie?.title}</h1>
         <button onClick={() => navigate(iso ? `/?iso=${iso}` : "/")}>
-          ← Back
+          <ArrowLeftIcon className="c-btn-icon" />
+          Back
         </button>
       </>
     );
@@ -24,8 +32,11 @@ function SidebarHeader({ movieSlug, iso, selectedMovie }: SidebarHeaderProps) {
   if (iso) {
     return (
       <>
-        <h1>{iso.toUpperCase()}</h1>
-        <button onClick={() => navigate("/")}>← World View</button>
+        <h1>{countryName ?? iso.toUpperCase()}</h1>
+        <button onClick={() => navigate("/")}>
+          <ArrowLeftIcon className="c-btn-icon" />
+          World View
+        </button>
       </>
     );
   }

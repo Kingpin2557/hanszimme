@@ -1,8 +1,9 @@
 import { useRef } from "react";
-import { useSearchParams, useParams } from "react-router-dom";
+import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../hooks/useMapCamera";
 import SidebarHeader from "../components/SidebarHeader";
+import CandleMarker from "../components/CandleMarker";
 
 import {
   hasValidPoster,
@@ -10,9 +11,7 @@ import {
   matchesCountry,
   hasTidalEmbed,
 } from "../script/utils/movieFiltes";
-import moviesData from "../assets/movies.json";
 import { type Movie } from "../types";
-import { slugify } from "../script/utils/slugify";
 import Sidebar from "../components/Sidebar";
 
 const initialPos = {
@@ -22,14 +21,27 @@ const initialPos = {
   padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
 
+type LoaderData =
+  | { type: "movies"; data: Movie[] }
+  | { type: "movie"; data: Movie };
+
 function Home() {
   const mapRef = useRef<MapRef>(null);
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
   const iso = params.get("iso")?.toLowerCase() ?? "";
 
-  const allMovies = moviesData as Movie[];
-  const selectedMovie = allMovies.find((m) => slugify(m.title) === movieSlug);
+  // The loader returns a discriminated { type, data }: the full list on "/",
+  // a single movie on "/:movieSlug". Derive both views from it.
+  const loaded = useLoaderData() as LoaderData;
+  const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
+  const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
+
+  // Full country name for the selected iso, for the sidebar header title.
+  const countryName = iso
+    ? allMovies.find((m) => m.origin_country?.code.toLowerCase() === iso)
+        ?.origin_country.name
+    : undefined;
 
   const list = allMovies.filter(
     (m, i, self) =>
@@ -61,10 +73,13 @@ function Home() {
             key={m.origin_country.code}
             longitude={m.origin_country.coords.lng}
             latitude={m.origin_country.coords.lat}
+            anchor="bottom"
             onClick={() =>
               setParams({ iso: m.origin_country.code.toLowerCase() })
             }
-          />
+          >
+            <CandleMarker />
+          </Marker>
         ))}
 
         <section className="o-sidebar">
@@ -73,6 +88,7 @@ function Home() {
               <SidebarHeader
                 movieSlug={movieSlug}
                 iso={iso}
+                countryName={countryName}
                 selectedMovie={selectedMovie}
               />
             </header>

@@ -21,5 +21,7 @@ export type Movie = {
   overview: string;
   poster_path: string;
   origin_country: Country;
+  genres: string[];
+  rating: { score: number; votes: number };
   tidal_album: Album;
 };

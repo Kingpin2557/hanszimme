@@ -3,31 +3,88 @@
     line-height: 1.5;
     font-weight: 400;
 
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+
+    /* ============================================================
+       DESIGN TOKENS — single source of truth. Edit here only.
+       ============================================================ */
+
+    /* ---- Colors: dark, cinematic, candle-lit ---- */
+    --color-bg: #0e0e12;                         /* deep backdrop */
+    --color-panel: rgba(18, 18, 22, 0.92);       /* glass sidebar */
+    --color-surface: rgba(255, 255, 255, 0.04);  /* cards */
+    --color-surface-hover: rgba(230, 180, 90, 0.08);
+    --color-border: rgba(230, 180, 90, 0.22);    /* gold hairline */
+    --color-border-strong: rgba(230, 180, 90, 0.55);
+    --color-text: #ece7dd;                        /* warm off-white */
+    --color-text-muted: #a49e92;
+    --color-accent: #e6b45a;                      /* candle gold */
+    --color-accent-hover: #f2c775;
+
+    /* ---- Candle / flame ---- */
+    --flame-core: #fff6cf;
+    --flame-mid: #ffcf70;
+    --flame-outer: #ff8a1e;
+    --flame-tip: #ff5a00;
+    --flame-glow: rgba(255, 176, 74, 0.65);
+    --wax-top: #f6ecd4;
+    --wax-bottom: #cbb488;
+    --candle-flame-w: 9px;
+    --candle-flame-h: 15px;
+    --candle-body-w: 10px;
+    --candle-body-h: 22px;
+
+    /* ---- Border radius ---- */
+    --radius-xs: 2px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+    --radius-pill: 999px;
+
+    /* ---- Spacing scale ---- */
+    --space-2xs: 0.25rem;
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-md: 1.5rem;
+    --space-lg: 2rem;
+
+    /* ---- Layout dimensions ---- */
+    --sidebar-width: 700px;
+    --sidebar-inset: 50px;
+    --sidebar-padding: 15px;
+    --sidebar-scroll-height: 600px;
+    --badge-inset: 20px;
+    --flag-width: 35px;
+    --poster-height: 200px;
+    --card-poster-height: 150px;
+
+    /* ---- Effects ---- */
+    --shadow-panel: 0 20px 60px rgba(0, 0, 0, 0.55);
+    --blur-panel: blur(12px);
+    --transition: 0.2s ease;
+
+    color-scheme: dark;
+    color: var(--color-text);
+    background-color: var(--color-bg);
 }
 
 a {
     font-weight: 500;
-    color: #646cff;
+    color: var(--color-accent);
     text-decoration: inherit;
 }
 a:hover {
-    color: #535bf2;
+    color: var(--color-accent-hover);
 }
 
 body {
     margin: 0;
-    display: flex;
-    place-items: center;
     min-width: 320px;
     min-height: 100vh;
+    background-color: var(--color-bg);
 }
 
 h1 {
@@ -36,33 +93,24 @@ h1 {
 }
 
 button {
-    border-radius: 8px;
-    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
     padding: 0.6em 1.2em;
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
-    background-color: #1a1a1a;
+    color: var(--color-text);
+    background-color: transparent;
     cursor: pointer;
-    transition: border-color 0.25s;
+    transition:
+        border-color var(--transition),
+        color var(--transition);
 }
 button:hover {
-    border-color: #646cff;
+    border-color: var(--color-border-strong);
+    color: var(--color-accent);
 }
 button:focus,
 button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-    :root {
-        color: #213547;
-        background-color: #ffffff;
-    }
-    a:hover {
-        color: #747bff;
-    }
-    button {
-        background-color: #f9f9f9;
-    }
 }

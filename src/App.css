@@ -8,10 +8,10 @@ main {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: var(--space-lg);
 
-    padding-inline: 2rem;
-    padding-block: 1rem;
+    padding-inline: var(--space-lg);
+    padding-block: var(--space-sm);
 
     a {
         text-decoration: none;
@@ -39,27 +39,28 @@ header {
 .o-flex {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-sm);
 }
 
-.o-full {
-    width: 100%;
-    height: 100vh;
-}
-
+/* Dark glass sidebar panel */
 .o-sidebar {
     position: absolute;
-    top: 10px;
-    right: 20px;
+    top: 50%;
+    right: var(--sidebar-inset);
+    transform: translateY(-50%);
 
-    padding: 15px;
-
-    height: 100vh;
-    width: 700px;
-
+    width: var(--sidebar-width);
+    height: min-content;
+    max-height: 90vh;
+    padding: var(--sidebar-padding);
     overflow-y: auto;
 
-    background-color: white;
+    color: var(--color-text);
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    backdrop-filter: var(--blur-panel);
+    box-shadow: var(--shadow-panel);
 }
 
 .c-card {
@@ -67,47 +68,57 @@ header {
 
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: var(--space-lg);
 
-    padding: 1rem;
-    border-radius: 8px;
-    border: 1px solid black;
-    color: black;
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    cursor: pointer;
+    transition:
+        border-color var(--transition),
+        background var(--transition),
+        box-shadow var(--transition);
 
     span {
         position: absolute;
-        top: 20px;
-        right: 20px;
+        top: var(--badge-inset);
+        right: var(--badge-inset);
 
-        width: 35px;
-        aspect-ratio: 16 /9;
+        width: var(--flag-width);
+        aspect-ratio: 16 / 9;
         text-align: center;
 
-        color: white;
-        padding: 0.5rem;
-        border-radius: 2px;
+        color: var(--color-text);
+        padding: var(--space-xs);
+        border-radius: var(--radius-xs);
 
         background-size: cover;
         background-position: center;
     }
 
-    p:first-child {
-        font-weight: bold;
-        font-size: 1.2rem;
-    }
-
     img {
-        border-radius: 4px;
-        height: 150px;
+        border-radius: var(--radius-sm);
+        height: var(--card-poster-height);
     }
+}
+
+/* Warm candle-glow on hover, echoing the map markers */
+.c-card:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-hover);
+    box-shadow: 0 0 18px var(--flame-glow);
 }
 
 .c-card__info {
     display: flex;
     flex-direction: column;
     align-content: flex-start;
-    gap: 1rem;
+    gap: var(--space-sm);
     width: 100%;
+    min-width: 0; /* let the text column shrink/wrap instead of overflowing */
+    /* keep text clear of the absolutely-positioned flag badge */
+    padding-right: calc(var(--flag-width) + var(--badge-inset));
 
     a {
         padding: 0;
@@ -115,105 +126,468 @@ header {
     }
 }
 
-.o-sidebar {
-    position: absolute;
-    top: 50%;
-    right: 50px;
-
-    transform: translateY(-50%);
-    padding-block: 15px;
-    height: min-content;
-
-    background-color: white;
-    border-radius: 10px;
-}
-
 .o-scroll {
-    height: 600px;
-
+    height: var(--sidebar-scroll-height);
     overflow-y: auto;
 }
 
 .o-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    margin-block-end: var(--space-sm);
+
+    h1 {
+        font-size: 1.9rem;
+        letter-spacing: 0.04em;
+        color: var(--color-accent);
+    }
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5em;
+        font-size: 1.05rem;
+        padding: 0.6em 1.1em;
+    }
+}
+
+.c-btn-icon {
+    width: 0.9em;
+    height: 0.9em;
+    flex-shrink: 0;
 }
 
 .c-card__description {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+
     p {
-        width: 90%;
-        max-height: 4.5em;
-
         display: -webkit-box;
-        line-clamp: 3;
         -webkit-box-orient: vertical;
-
-        text-overflow: ellipsis;
         overflow: hidden;
-
+        text-overflow: ellipsis;
+        overflow-wrap: break-word; /* break long words instead of overflowing */
         line-height: 1.5em;
+    }
+
+    /* Title: bold gold, capped at 2 lines */
+    p:first-child {
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: var(--color-accent);
+    }
+
+    /* Overview: muted, capped at 3 lines */
+    p:last-child {
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        color: var(--color-text-muted);
     }
 }
 .c-card__btn {
-    border-bottom: 1px solid black;
+    border-bottom: 1px solid var(--color-accent);
+    color: var(--color-accent);
     width: fit-content;
 }
 
 .c-detail {
     a {
-        padding-block: 5px;
-        padding-inline: 10px;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-xs);
     }
 }
 
 .c-detail__header {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: var(--space-lg);
 
-    border-radius: 8px;
+    padding-inline: var(--space-lg);
+    border-radius: var(--radius-md);
 
     img {
-        border-radius: 4px;
+        height: var(--poster-height);
+        width: auto;
+        flex-shrink: 0;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+    }
+
+    h2 {
+        color: var(--color-text);
     }
 }
 
-.c-detail__music-container {
+.c-detail__description {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* Overview truncated to a few lines; click to open the full text in a dialog. */
+.c-detail__overview {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    line-height: 1.5em;
+    transition: color var(--transition);
+}
+
+/* Only interactive when the text is actually clamped. */
+.c-detail__overview[data-clickable] {
+    cursor: pointer;
+}
+
+.c-detail__overview[data-clickable]:hover {
+    color: var(--color-accent);
+}
+
+.c-dialog {
+    margin: auto;
+    max-width: 520px;
+    width: 90%;
+    padding: var(--space-lg);
+
+    color: var(--color-text);
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-panel);
+    backdrop-filter: var(--blur-panel);
+}
+
+.c-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.c-dialog__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.c-dialog__body p {
+    line-height: 1.6em;
+    overflow-wrap: break-word;
+}
+
+.c-dialog__close {
+    align-self: flex-end;
+}
+
+.c-detail__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+
+    color: var(--color-text-muted);
+
+    span {
+        display: inline-block;
+        width: var(--flag-width);
+        aspect-ratio: 16 / 9;
+        border-radius: var(--radius-xs);
+
+        background-size: cover;
+        background-position: center;
+    }
+}
+
+.c-detail__genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+
+.c-pill {
+    padding: var(--space-2xs) var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-accent);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* Compact soundtrack "album embed" — artwork, track list, seek bar.
+   The audio analyser runs headless and logs FFT data to the console. */
+.c-player {
+    margin-top: var(--space-lg);
+    padding: var(--space-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+}
+
+.c-player__album {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+}
+
+.c-player__art {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+}
+
+.c-player__album-info {
+    min-width: 0;
+}
+
+.c-player__album-title {
+    font-weight: bold;
+    color: var(--color-accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.c-player__album-artist {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.c-player__tracks {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+/* The active box wraps the whole row: track button + scrubber. */
+.c-player__tracks li[data-active] {
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    padding-bottom: var(--space-2xs);
+}
+
+.c-player__track {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 100%;
+
+    padding: var(--space-2xs) var(--space-xs);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.c-player__track:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+    border-color: transparent;
+}
+
+.c-player__track[data-active] {
+    color: var(--color-accent);
+}
+
+/* One clean box only: drop the default focus ring, keep a subtle keyboard one. */
+.c-player__track:focus {
+    outline: none;
+}
+
+.c-player__track:focus-visible {
+    outline: 2px solid var(--color-border-strong);
+    outline-offset: -2px;
+}
+
+.c-player__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    width: 1.1em;
+}
+
+.c-player__icon svg {
+    width: 1.1em;
+    height: 1.1em;
+}
+
+.c-player__track-title {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.c-player__time {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Per-track scrubber: elapsed | seek bar | total, shown only while playing.
+   Indented so the bar lines up under the title, past the play icon. */
+.c-player__scrubber {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-xs);
+    padding: 0 var(--space-xs) var(--space-2xs)
+        calc(var(--space-xs) + 1.1em + var(--space-xs));
+}
+
+.c-player__scrubber .c-player__time {
+    min-width: 3.4ch;
+}
+
+.c-player__scrubber .c-player__time:last-child {
+    text-align: right;
+}
+
+.c-player__seek {
     position: relative;
-    width: 100%;
-    margin-top: 2rem;
+    flex: 1;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--color-border);
+    cursor: pointer;
 }
 
-.c-detail__iframe {
-    border-radius: 8px;
-    height: 300px;
-    z-index: 1;
+.c-player__seek-fill {
+    position: relative;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    transition: width 0.1s linear;
 }
 
-.c-detail__iframe-shield {
+/* Rounded knob at the end of the fill for a finished look. */
+.c-player__seek-fill::after {
+    content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 35%;
-    z-index: 2;
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    box-shadow: 0 0 6px var(--flame-glow);
+}
 
-    clip-path: polygon(
-        0% 0%,
-        /* Top Left */ 100% 0%,
-        /* Top Right */ 100% 18%,
-        /* Right side, above logo */ 85% 18%,
-        /* Move left to clear logo */ 85% 42%,
-        /* Move down to cover header area */ 100% 42%,
-        /* Move back to right edge */ 100% 42%,
-        /* Bottom of red area */ 0% 42%
-    );
+/* Loader-error fallback screen */
+.o-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
 
-    pointer-events: auto;
-    touch-action: none;
+    height: 100vh;
+    text-align: center;
+    color: var(--color-text);
+    background: var(--color-bg);
 }
 
 .mapboxgl-ctrl-bottom-right,
 .mapboxgl-ctrl-bottom-left {
     display: none !important;
+}
+
+/* Candle map marker — a warm flame flickering over each country. */
+.c-candle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    filter: drop-shadow(0 0 6px var(--flame-glow));
+    transition:
+        transform var(--transition),
+        opacity 0.6s ease;
+}
+
+.c-candle:hover {
+    transform: scale(1.2);
+}
+
+.c-candle__flame {
+    width: var(--candle-flame-w);
+    height: var(--candle-flame-h);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: radial-gradient(
+        circle at 50% 72%,
+        var(--flame-core) 0%,
+        var(--flame-mid) 40%,
+        var(--flame-outer) 75%,
+        var(--flame-tip) 100%
+    );
+    transform-origin: 50% 100%;
+    animation: candle-flicker 1.5s ease-in-out infinite;
+}
+
+.c-candle__body {
+    width: var(--candle-body-w);
+    height: var(--candle-body-h);
+    margin-top: -1px;
+    border-radius: var(--radius-xs) var(--radius-xs) 1px 1px;
+    background: linear-gradient(var(--wax-top), var(--wax-bottom));
+}
+
+@keyframes candle-flicker {
+    0%,
+    100% {
+        transform: scaleY(1) rotate(-1.5deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scaleY(1.14) rotate(1.5deg);
+        opacity: 0.85;
+    }
+}
+
+/* ============================================================
+   "Stage" mode: while a preview is playing we dissolve the globe
+   so the UE5 Niagara music visualizer (composited behind this
+   browser widget) shows through. Only the sidebar UI stays.
+   Toggled by adding `is-playing` to <html> in SoundtrackPlayer.
+   ============================================================ */
+.mapboxgl-canvas,
+.mapboxgl-marker {
+    transition: opacity 0.6s ease;
+}
+
+/* Transparent page so UE can composite the Niagara system underneath. */
+html.is-playing,
+html.is-playing body {
+    background: transparent;
+}
+
+/* Fade the earth + candle markers, but keep the movie/album sidebar.
+   Target our own .c-candle too — react-map-gl's marker wrapper doesn't
+   reliably carry the .mapboxgl-marker class. */
+html.is-playing .mapboxgl-canvas,
+html.is-playing .mapboxgl-marker,
+html.is-playing .c-candle {
+    opacity: 0;
+    pointer-events: none;
 }

@@ -16,6 +16,7 @@ function SidebarContent({ slug, movie, movies, children }: SidebarProps) {
 
   const handleMovieClick = (m: Movie) => {
     const countryCode = m.origin_country.code.toLowerCase();
+    // The slug in the URL is what the detail loader uses to fetch the movie.
     navigate(`/${slugify(m.title)}?iso=${countryCode}`);
   };
 

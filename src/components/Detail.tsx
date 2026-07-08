@@ -1,32 +1,89 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { type Movie } from "../types";
+import CountryFlag from "./CountryFlag";
+import Pill from "./Pill";
+import SoundtrackPlayer from "./SoundtrackPlayer";
 
 interface DetailProps {
   movie: Movie;
 }
 
 function Detail({ movie }: DetailProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const overviewRef = useRef<HTMLParagraphElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  // Only offer the dialog when the clamped overview actually overflows.
+  useLayoutEffect(() => {
+    const el = overviewRef.current;
+    if (!el) return;
+    const check = () => setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [movie.overview]);
+
   return (
     <div className="c-detail">
       <div className="c-detail__header">
         <img src={movie.poster_path} alt={movie.title} />
         <div className="c-detail__description">
-          <h2>{movie.title}</h2>
-          <p>{movie.overview}</p>
+          <div className="c-detail__meta">
+            <CountryFlag code={movie.origin_country.code} />
+            <p>
+              ★ {movie.rating.score} / 10 ·{" "}
+              <a
+                href={`https://www.themoviedb.org/movie/${movie.id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {movie.rating.votes} votes on TMDB
+              </a>
+            </p>
+          </div>
+
+          <p
+            ref={overviewRef}
+            className="c-detail__overview"
+            data-clickable={isTruncated || undefined}
+            title={isTruncated ? "Click to read the full description" : undefined}
+            onClick={
+              isTruncated ? () => dialogRef.current?.showModal() : undefined
+            }
+          >
+            {movie.overview}
+          </p>
+
+          {movie.genres.length > 0 && (
+            <div className="c-detail__genres">
+              {movie.genres.map((genre) => (
+                <Pill key={genre} label={genre} />
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {movie.tidal_album?.embed_link && (
-        <div className="c-detail__music-container">
-          <iframe
-            title={`Tidal Album: ${movie.tidal_album.title}`}
-            src={movie.tidal_album.embed_link}
-            width="100%"
-            height="450"
-            allow="encrypted-media"
-            className="c-detail__iframe"
-          ></iframe>
-          <div className="c-detail__iframe-shield"></div>
-        </div>
+      <SoundtrackPlayer movieId={movie.id} />
+
+      {isTruncated && (
+        <dialog
+          ref={dialogRef}
+          className="c-dialog"
+          onClick={(e) => {
+            if (e.target === dialogRef.current) dialogRef.current?.close();
+          }}
+        >
+          <div className="c-dialog__body">
+            <p>{movie.overview}</p>
+            <button
+              className="c-dialog__close"
+              onClick={() => dialogRef.current?.close()}
+            >
+              Close
+            </button>
+          </div>
+        </dialog>
       )}
     </div>
   );
