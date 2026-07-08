@@ -38,12 +38,15 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Create WebAudio graph fresh per track activation (avoids “stuck suspended” contexts in embedded browsers)
+  // WebAudio graph (rebuilt on each new track click)
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
+  // Logging (throttled)
   const rafRef = useRef<number>(0);
+  const lastLogMsRef = useRef<number>(0);
+  const LOG_EVERY_MS = 100; // max ~10 lines/sec
 
   useEffect(() => {
     fetch(`${API}/api/movie/${movieId}/tracks`)
@@ -64,13 +67,12 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   }, []);
 
   useEffect(() => {
-    // if this causes reflow/unmount in your UE setup, comment it out
     document.documentElement.classList.toggle("is-playing", isPlaying);
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
   function startLogging() {
-    cancelAnimationFrame(rafRef.current);
+    stopLogging();
 
     const analyser = analyserRef.current;
     if (!analyser) return;
@@ -80,26 +82,34 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     const logFrame = () => {
       analyser.getByteFrequencyData(raw);
 
-      let sum = 0;
-      const bands = Array.from(raw, (v) => {
-        sum += v;
-        return (v / 255).toFixed(3);
-      });
-      const level = (sum / raw.length / 255).toFixed(3);
+      const now = performance.now();
+      if (now - lastLogMsRef.current >= LOG_EVERY_MS) {
+        lastLogMsRef.current = now;
 
-      console.log(`HZFFT|${level}|${bands.join(",")}`);
+        let sum = 0;
+        const bands = Array.from(raw, (v) => {
+          sum += v;
+          return (v / 255).toFixed(3);
+        });
+        const level = (sum / raw.length / 255).toFixed(3);
+
+        console.log(`HZFFT|${level}|${bands.join(",")}`);
+      }
+
       rafRef.current = requestAnimationFrame(logFrame);
     };
 
+    lastLogMsRef.current = 0;
     rafRef.current = requestAnimationFrame(logFrame);
   }
 
   function stopLogging() {
     cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
   }
 
   async function buildAnalyserFresh() {
-    // Clean up previous graph/context
+    // Disconnect/close previous graph
     try {
       sourceRef.current?.disconnect();
     } catch {}
@@ -130,7 +140,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     sourceRef.current = source;
     analyserRef.current = analyser;
 
-    // Must be called from the same click path in embedded browsers
+    // Must be resumed during the click path
     await ctx.resume().catch(() => {});
   }
 
@@ -138,7 +148,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Toggle pause/play for the same track
     if (currentId === track.id) {
       if (audio.paused) {
         try {
@@ -153,26 +162,22 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       return;
     }
 
-    // Load a new preview
     setCurrentId(track.id);
     setIsPlaying(false);
-    stopLogging();
     setDuration(0);
     setCurrentTime(0);
+    stopLogging();
 
-    // Important: set crossOrigin BEFORE setting src
     audio.crossOrigin = "anonymous";
     audio.src = `${API}/api/preview/${track.id}`;
     audio.load();
 
-    // Build analyser graph after setting src (and from the user click path)
     await buildAnalyserFresh();
 
-    // Play immediately; log the failure reason if blocked
     audio
       .play()
       .then(() => {
-        // onPlay handler will set isPlaying/startLogging
+        // onPlay handler will flip isPlaying + startLogging
       })
       .catch((err) => {
         console.log("play() failed:", err);
@@ -250,6 +255,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       <audio
         ref={audioRef}
+        crossOrigin="anonymous"
+        preload="metadata"
         onPlay={() => {
           console.log("[audio] onPlay", {
             src: audioRef.current?.src,
@@ -259,11 +266,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
             readyState: audioRef.current?.readyState,
           });
           setIsPlaying(true);
-          try {
-            startLogging();
-          } catch (e) {
-            console.log("[audio] startLogging() threw:", e);
-          }
+          startLogging();
         }}
         onPause={() => {
           console.log("[audio] onPause", {
@@ -272,18 +275,17 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
             paused: audioRef.current?.paused,
           });
           setIsPlaying(false);
-          try {
-            stopLogging();
-          } catch (e) {
-            console.log("[audio] stopLogging() threw:", e);
-          }
+          stopLogging();
         }}
         onEnded={() => {
           console.log("[audio] onEnded");
           const index = tracks.findIndex((t) => t.id === currentId);
           const next = tracks[index + 1];
           if (next) selectTrack(next);
-          else setIsPlaying(false);
+          else {
+            setIsPlaying(false);
+            stopLogging();
+          }
         }}
         onLoadedMetadata={(e) => {
           const a = e.currentTarget;
@@ -296,10 +298,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         }}
         onTimeUpdate={(e) => {
           const a = e.currentTarget;
-          // log only sometimes to avoid spamming
-          if (Math.floor(a.currentTime) !== Math.floor(currentTime)) {
-            setCurrentTime(a.currentTime);
-          }
+          setCurrentTime(a.currentTime);
         }}
         onWaiting={() => console.log("[audio] onWaiting")}
         onStalled={() => console.log("[audio] onStalled")}
