@@ -1,9 +1,6 @@
 import type { LoaderFunction } from "react-router";
 import { type Movie } from "../types";
 
-// The API speaks its own shape (poster / originCountry / album); the app's Movie
-// type expects poster_path / origin_country / tidal_album. Normalise it here in
-// one place so the components stay untouched.
 type ApiMovie = {
   id: number;
   title: string;
@@ -26,35 +23,48 @@ const toMovie = (m: ApiMovie): Movie => ({
   rating: m.rating ?? { score: 0, votes: 0 },
   tidal_album: {
     id: m.album?.id ?? 0,
-    // NOTE: the API returns an iTunes album link, not an embeddable player.
     embed_link: m.album?.itunesUrl ?? "",
     title: m.album?.title ?? "",
     tracks: "",
   },
 });
 
-// Shared fetch: same logic for the list route and the single-movie route.
 const fetchMovies = async (path: string = "") => {
-  const response = await fetch(`${import.meta.env.VITE_MOVIE_API}/api/movie${path}`);
+  const url = `${import.meta.env.VITE_MOVIE_API}/api/movie${path}`;
+  console.log("Fetching from URL:", url); // Debug log
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch movies");
+  try {
+    const response = await fetch(url);
+    console.log("Response status:", response.status); // Debug log
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Response error:", errorText); // Debug log
+      throw new Error(
+        `Failed to fetch movies: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Fetch error:", error);
+    throw error;
   }
-
-  return response.json();
 };
 
-// Root loader: the full filmography (map markers + sidebar list).
 export const movieLoader: LoaderFunction = async () => {
+  console.log("Movie loader called"); // Debug log
   const data = await fetchMovies();
+  console.log("Data received:", data); // Debug log
+
   const movies = (data.movies as ApiMovie[])
     .filter((m) => m.originCountry)
     .map(toMovie);
   return { type: "movies" as "movies", data: movies };
 };
 
-// Same loader, but hits /api/movie/:slug — one movie, resolved from the URL slug.
 export const movieDetailLoader: LoaderFunction = async ({ params }) => {
+  console.log("Movie detail loader called for:", params.movieSlug); // Debug log
   const data = await fetchMovies(`/${params.movieSlug}`);
   return { type: "movie" as "movie", data: toMovie(data as ApiMovie) };
 };
