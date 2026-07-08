@@ -79,15 +79,30 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   async function selectTrack(track: Track) {
     const audio = audioRef.current;
     if (!audio) return;
+
+    // 1. Stop and clear
+    stopLogging();
+    audio.pause();
+    audio.src = "";
+    audio.load(); // Force the widget to drop the current stream
+
     initAudioGraph();
 
     if (currentId === track.id) {
-      audio.paused ? await audio.play() : audio.pause();
+      await audio.play();
       return;
     }
+
     setCurrentId(track.id);
+    // 2. Set new source
     audio.src = `${API}/api/preview/${track.id}`;
-    await audio.play();
+
+    // 3. Ensure the browser widget detects the change
+    try {
+      await audio.play();
+    } catch (err) {
+      console.log("play() failed:", err);
+    }
   }
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
