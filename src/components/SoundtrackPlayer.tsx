@@ -306,7 +306,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       <audio
         ref={audioRef}
-        crossOrigin="anonymous"
         preload="metadata"
         onPlay={() => {
           setIsPlaying(true);
