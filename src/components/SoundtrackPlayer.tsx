@@ -2,8 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { logAlbumGradient } from "../lib/sampleGradient";
 import { PlayIcon, PauseIcon } from "./icons";
 
-type Album = { title: string; artist: string; artwork: string | null };
-type Track = { id: number; title: string; durationMs: number | null };
+type Album = {
+  title: string;
+  artist: string;
+  artwork: string | null;
+};
+
+type Track = {
+  id: number;
+  title: string;
+  durationMs: number | null;
+};
 
 const API = import.meta.env.VITE_MOVIE_API;
 
@@ -15,11 +24,17 @@ function formatTime(seconds: number): string {
   return `${minutes}:${rest}`;
 }
 
-export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
+interface SoundtrackPlayerProps {
+  movieId: number;
+}
+
+export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const [album, setAlbum] = useState<Album | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -75,6 +90,13 @@ export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
     await audio.play();
   }
 
+  function seek(e: React.MouseEvent<HTMLDivElement>) {
+    const audio = audioRef.current;
+    if (!audio || !audio.duration || !Number.isFinite(audio.duration)) return;
+    const bar = e.currentTarget.getBoundingClientRect();
+    audio.currentTime = ((e.clientX - bar.left) / bar.width) * audio.duration;
+  }
+
   useEffect(() => {
     fetch(`${API}/api/movie/${movieId}/tracks`)
       .then((res) => res.json())
@@ -84,28 +106,70 @@ export default function SoundtrackPlayer({ movieId }: { movieId: number }) {
       });
   }, [movieId]);
 
+  const progress = duration ? (currentTime / duration) * 100 : 0;
+
   return (
     <div className="c-player">
+      {album && (
+        <div className="c-player__album">
+          {album.artwork && (
+            <img
+              className="c-player__art"
+              src={album.artwork}
+              alt={album.title}
+            />
+          )}
+          <div className="c-player__album-info">
+            <div className="c-player__album-title">{album.title}</div>
+            <div className="c-player__album-artist">{album.artist}</div>
+          </div>
+        </div>
+      )}
+
       <ul className="c-player__tracks">
-        {tracks.map((track) => (
-          <li key={track.id}>
-            <button onClick={() => selectTrack(track)}>
-              {currentId === track.id && isPlaying ? (
-                <PauseIcon />
-              ) : (
-                <PlayIcon />
+        {tracks.map((track) => {
+          const isActive = currentId === track.id;
+          return (
+            <li key={track.id} data-active={isActive || undefined}>
+              <button
+                type="button"
+                className="c-player__track"
+                data-active={isActive || undefined}
+                onClick={() => selectTrack(track)}
+              >
+                <span className="c-player__icon">
+                  {isActive && isPlaying ? <PauseIcon /> : <PlayIcon />}
+                </span>
+                <span className="c-player__track-title">{track.title}</span>
+                <span className="c-player__time">
+                  {formatTime((track.durationMs ?? 0) / 1000)}
+                </span>
+              </button>
+
+              {isActive && isPlaying && (
+                <div className="c-player__scrubber">
+                  <span className="c-player__time">
+                    {formatTime(currentTime)}
+                  </span>
+                  <div className="c-player__seek" onClick={seek}>
+                    <div
+                      className="c-player__seek-fill"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span className="c-player__time">{formatTime(duration)}</span>
+                </div>
               )}
-              {track.title}
-              <span className="c-player__time">
-                {formatTime((track.durationMs ?? 0) / 1000)}
-              </span>
-            </button>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
+
       <audio
         ref={audioRef}
         crossOrigin="anonymous"
+        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
         onPlaying={() => {
           setIsPlaying(true);
           if (album?.artwork) logAlbumGradient(album.artwork);
