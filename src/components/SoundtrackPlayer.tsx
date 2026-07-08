@@ -177,6 +177,23 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
+  async function unlockAudio() {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    audio.muted = true;
+
+    try {
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+    } catch (err) {
+      console.log("Audio unlock failed:", err);
+    }
+
+    audio.muted = false;
+  }
+
   async function selectTrack(track: Track) {
     const audio = audioRef.current;
     if (!audio) return;
@@ -254,7 +271,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
                 type="button"
                 className="c-player__track"
                 data-active={isActive || undefined}
-                onClick={() => selectTrack(track)}
+                onClick={async () => {
+                  await unlockAudio();
+                  await selectTrack(track);
+                }}
               >
                 <span className="c-player__icon">
                   {isActive && isPlaying ? <PauseIcon /> : <PlayIcon />}
