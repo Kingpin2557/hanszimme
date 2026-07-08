@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { logAlbumGradient } from "../lib/sampleGradient";
 import { PlayIcon, PauseIcon } from "./icons";
 
-// Shapes returned by GET /api/movie/:id/tracks
 type Album = {
   title: string;
   artist: string;
@@ -17,7 +16,6 @@ type Track = {
 
 const API = import.meta.env.VITE_MOVIE_API;
 
-// mm:ss from seconds.
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return "0:00";
   const total = Math.round(seconds);
@@ -30,23 +28,23 @@ interface SoundtrackPlayerProps {
   movieId: number;
 }
 
-function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
+export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const [album, setAlbum] = useState<Album | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0); // seconds into the preview
-  const [duration, setDuration] = useState(0); // preview length in seconds
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Web Audio nodes — created once, on the first play (needs a user gesture).
-  const contextRef = useRef<AudioContext | null>(null);
+  // Create WebAudio graph fresh per track activation (avoids “stuck suspended” contexts in embedded browsers)
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const frameRef = useRef<number>(0);
 
-  // 1. Load this movie's album + preview tracks.
+  const rafRef = useRef<number>(0);
+
   useEffect(() => {
     fetch(`${API}/api/movie/${movieId}/tracks`)
       .then((res) => (res.ok ? res.json() : null))
@@ -57,96 +55,134 @@ function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       .catch(() => setTracks([]));
   }, [movieId]);
 
-  // One-time per album: log a colour gradient sampled from the artwork for UE5.
   useEffect(() => {
     if (album?.artwork) logAlbumGradient(album.artwork);
   }, [album?.artwork]);
 
-  // Stop the log loop when the component unmounts.
-  useEffect(() => () => cancelAnimationFrame(frameRef.current), []);
-
-  // While a preview plays, dissolve the globe (see .is-playing in App.css) so
-  // the UE5 Niagara visualizer behind this browser widget shows through.
   useEffect(() => {
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  useEffect(() => {
+    // if this causes reflow/unmount in your UE setup, comment it out
     document.documentElement.classList.toggle("is-playing", isPlaying);
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
-  // 2. Wire <audio> -> AnalyserNode -> speakers. Only once per element.
-  function connectAnalyser() {
-    const audio = audioRef.current;
-    if (!audio || sourceRef.current) return;
+  function startLogging() {
+    cancelAnimationFrame(rafRef.current);
 
-    const context = new AudioContext();
-    const source = context.createMediaElementSource(audio);
-    const analyser = context.createAnalyser();
-    analyser.fftSize = 64; // -> 32 frequency bands, plenty for Niagara
-
-    source.connect(analyser);
-    analyser.connect(context.destination); // keep the sound audible
-
-    contextRef.current = context;
-    sourceRef.current = source;
-    analyserRef.current = analyser;
-  }
-
-  // 3. Headless loop: log the FFT data for the UE5 Niagara system.
-  //    One line, ONE string argument, easy to parse in UE:
-  //      HZFFT|<level>|<b0,b1,...,bN>
-  //    - level : overall loudness, 0..1
-  //    - b0..bN: each frequency band, 0..1
-  //    Parse in UE: split on "|", then split the bands on ",".
-  function logFrame() {
     const analyser = analyserRef.current;
     if (!analyser) return;
 
     const raw = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(raw);
 
-    let sum = 0;
-    const bands = Array.from(raw, (v) => {
-      sum += v;
-      return (v / 255).toFixed(3); // 0..1
-    });
-    const level = (sum / raw.length / 255).toFixed(3); // 0..1
+    const logFrame = () => {
+      analyser.getByteFrequencyData(raw);
 
-    console.log(`HZFFT|${level}|${bands.join(",")}`);
+      let sum = 0;
+      const bands = Array.from(raw, (v) => {
+        sum += v;
+        return (v / 255).toFixed(3);
+      });
+      const level = (sum / raw.length / 255).toFixed(3);
 
-    frameRef.current = requestAnimationFrame(logFrame);
-  }
+      console.log(`HZFFT|${level}|${bands.join(",")}`);
+      rafRef.current = requestAnimationFrame(logFrame);
+    };
 
-  function startLogging() {
-    cancelAnimationFrame(frameRef.current);
-    logFrame();
+    rafRef.current = requestAnimationFrame(logFrame);
   }
 
   function stopLogging() {
-    cancelAnimationFrame(frameRef.current);
+    cancelAnimationFrame(rafRef.current);
   }
 
-  // 4. Play / pause. Clicking the active track toggles it; another track loads.
-  function selectTrack(track: Track) {
+  async function buildAnalyserFresh() {
+    // Clean up previous graph/context
+    try {
+      sourceRef.current?.disconnect();
+    } catch {}
+    try {
+      analyserRef.current?.disconnect();
+    } catch {}
+    try {
+      await audioCtxRef.current?.close();
+    } catch {}
+
+    sourceRef.current = null;
+    analyserRef.current = null;
+    audioCtxRef.current = null;
+
     const audio = audioRef.current;
     if (!audio) return;
 
+    const ctx = new AudioContext();
+    audioCtxRef.current = ctx;
+
+    const source = ctx.createMediaElementSource(audio);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 64;
+
+    source.connect(analyser);
+    analyser.connect(ctx.destination);
+
+    sourceRef.current = source;
+    analyserRef.current = analyser;
+
+    // Must be called from the same click path in embedded browsers
+    await ctx.resume().catch(() => {});
+  }
+
+  async function selectTrack(track: Track) {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // Toggle pause/play for the same track
     if (currentId === track.id) {
-      audio.paused ? audio.play() : audio.pause();
+      if (audio.paused) {
+        try {
+          await audioCtxRef.current?.resume();
+        } catch {}
+        audio
+          .play()
+          .catch((err) => console.log("play() failed (toggle):", err));
+      } else {
+        audio.pause();
+      }
       return;
     }
 
-    audio.crossOrigin = "anonymous"; // must be set before src for CORS
-    audio.src = `${API}/api/preview/${track.id}`;
-
-    connectAnalyser();
-    contextRef.current?.resume(); // browsers start the context suspended
-    audio.play().catch(() => {});
+    // Load a new preview
     setCurrentId(track.id);
+    setIsPlaying(false);
+    stopLogging();
+    setDuration(0);
+    setCurrentTime(0);
+
+    // Important: set crossOrigin BEFORE setting src
+    audio.crossOrigin = "anonymous";
+    audio.src = `${API}/api/preview/${track.id}`;
+    audio.load();
+
+    // Build analyser graph after setting src (and from the user click path)
+    await buildAnalyserFresh();
+
+    // Play immediately; log the failure reason if blocked
+    audio
+      .play()
+      .then(() => {
+        // onPlay handler will set isPlaying/startLogging
+      })
+      .catch((err) => {
+        console.log("play() failed:", err);
+      });
   }
 
-  // Click the seek bar to jump within the current preview.
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     const audio = audioRef.current;
-    if (!audio || !audio.duration) return;
+    if (!audio || !audio.duration || !Number.isFinite(audio.duration)) return;
+
     const bar = e.currentTarget.getBoundingClientRect();
     audio.currentTime = ((e.clientX - bar.left) / bar.width) * audio.duration;
   }
@@ -160,7 +196,11 @@ function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       {album && (
         <div className="c-player__album">
           {album.artwork && (
-            <img className="c-player__art" src={album.artwork} alt={album.title} />
+            <img
+              className="c-player__art"
+              src={album.artwork}
+              alt={album.title}
+            />
           )}
           <div className="c-player__album-info">
             <div className="c-player__album-title">{album.title}</div>
@@ -175,6 +215,7 @@ function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           return (
             <li key={track.id} data-active={isActive || undefined}>
               <button
+                type="button"
                 className="c-player__track"
                 data-active={isActive || undefined}
                 onClick={() => selectTrack(track)}
@@ -218,12 +259,10 @@ function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           stopLogging();
         }}
         onEnded={() => {
-          // Auto-advance to the next track; stop only after the last one.
           const index = tracks.findIndex((t) => t.id === currentId);
           const next = tracks[index + 1];
-          if (next) {
-            selectTrack(next);
-          } else {
+          if (next) selectTrack(next);
+          else {
             setIsPlaying(false);
             stopLogging();
           }
@@ -234,5 +273,3 @@ function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     </div>
   );
 }
-
-export default SoundtrackPlayer;
