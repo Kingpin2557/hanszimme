@@ -200,13 +200,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
     ensureGraphInitialized();
 
-    // Toggle current track
     if (currentId === track.id) {
       if (audio.paused) {
-        await resumeAudioContextIfNeeded().catch(() => {});
-        audio
-          .play()
-          .catch((err) => console.log("play() failed (toggle):", err));
+        await audio.play();
+        await resumeAudioContextIfNeeded(); // Use it here
       } else {
         audio.pause();
       }
@@ -214,23 +211,31 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
 
     setCurrentId(track.id);
-    setIsPlaying(false);
-    setDuration(0);
-    setCurrentTime(0);
-    stopLogging();
-
-    audio.crossOrigin = "anonymous";
     audio.src = `${API}/api/preview/${track.id}`;
-    audio.load();
+
+    await new Promise((resolve) => {
+      audio.onloadedmetadata = resolve;
+      audio.load();
+    });
 
     try {
       await audio.play();
-      await resumeAudioContextIfNeeded();
-      // onPlay will startLogging + setIsPlaying
+      await resumeAudioContextIfNeeded(); // Use it here
     } catch (err) {
       console.log("play() failed:", err);
     }
   }
+
+  const onPlay = () => {
+    setIsPlaying(true);
+
+    // Resume context only here
+    if (audioCtxRef.current?.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
+
+    startLogging();
+  };
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     const audio = audioRef.current;
@@ -308,6 +313,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         ref={audioRef}
         crossOrigin="anonymous"
         preload="metadata"
+        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)} // Resolves "never read" error
         onLoadStart={() => {
           console.log("AUDIO: load started");
         }}
@@ -320,16 +326,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         onCanPlay={() => {
           console.log("AUDIO: can play");
         }}
-        onPlay={() => {
-          console.log("AUDIO: PLAY EVENT FIRED");
-
-          setIsPlaying(true);
-
-          resumeAudioContextIfNeeded().finally(() => {
-            ensureGraphInitialized();
-            startLogging();
-          });
-        }}
+        onPlay={onPlay}
         onPlaying={() => {
           console.log("AUDIO: ACTUALLY PLAYING");
         }}
