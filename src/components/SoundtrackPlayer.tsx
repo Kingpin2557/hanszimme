@@ -40,6 +40,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const rafRef = useRef<number | null>(null);
+  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
 
   const activeBandsCount = 16;
 
@@ -72,14 +73,43 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   }
 
   function initAudioGraph() {
-    if (audioCtxRef.current || !audioRef.current) return;
-    const ctx = new AudioContext();
-    const source = ctx.createMediaElementSource(audioRef.current);
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 64;
-    source.connect(analyser);
-    audioCtxRef.current = ctx;
-    analyserRef.current = analyser;
+    if (!audioRef.current) return;
+
+    try {
+      // Clean up existing graph if it exists
+      if (sourceRef.current) {
+        try {
+          sourceRef.current.disconnect();
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+        sourceRef.current = null;
+      }
+
+      // If context exists but is closed, create new one
+      if (audioCtxRef.current && audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = null;
+      }
+
+      if (!audioCtxRef.current) {
+        const ctx = new (
+          window.AudioContext || (window as any).webkitAudioContext
+        )();
+        const source = ctx.createMediaElementSource(audioRef.current);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+
+        // Don't connect to destination yet, we'll do it on play
+        source.connect(analyser);
+
+        audioCtxRef.current = ctx;
+        analyserRef.current = analyser;
+        sourceRef.current = source;
+      }
+    } catch (err) {
+      console.error("Failed to initialize audio graph:", err);
+      // Fallback: continue without audio analysis
+    }
   }
 
   async function selectTrack(track: Track) {
@@ -88,19 +118,47 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
     stopLogging();
     audio.pause();
+
+    // Reset audio element for new track
     audio.src = "";
     audio.load();
 
+    // Initialize audio graph
     initAudioGraph();
 
+    // Resume audio context on user interaction
+    try {
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        await audioCtxRef.current.resume();
+      }
+    } catch (err) {
+      console.error("Failed to resume audio context:", err);
+    }
+
+    // If it's the same track and we're already playing, just play
     if (currentId === track.id) {
-      await audio.play();
+      try {
+        await audio.play();
+      } catch (err) {
+        console.error("Playback failed:", err);
+      }
       return;
     }
+
     setCurrentId(track.id);
     audio.src = `${API}/api/preview/${track.id}`;
-    console.log("Audio URL:", `${API}/api/preview/${track.id}`);
-    await audio.play();
+
+    // Wait for the audio to be ready before playing
+    await new Promise((resolve) => {
+      audio.oncanplaythrough = resolve;
+      audio.load();
+    });
+
+    try {
+      await audio.play();
+    } catch (err) {
+      console.error("Playback failed:", err);
+    }
   }
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
@@ -181,23 +239,47 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       <audio
         ref={audioRef}
         crossOrigin="anonymous"
+        preload="metadata"
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
         onPlaying={() => {
           setIsPlaying(true);
           if (album?.artwork) logAlbumGradient(album.artwork);
-          analyserRef.current?.connect(audioCtxRef.current!.destination);
-          audioCtxRef.current?.resume();
+
+          // Connect to destination and resume context on play
+          try {
+            if (analyserRef.current && audioCtxRef.current) {
+              analyserRef.current.connect(audioCtxRef.current.destination);
+              if (audioCtxRef.current.state === "suspended") {
+                audioCtxRef.current.resume();
+              }
+            }
+          } catch (err) {
+            console.error("Failed to connect audio graph:", err);
+          }
+
           startLogging();
         }}
         onPause={() => {
           setIsPlaying(false);
           stopLogging();
-          analyserRef.current?.disconnect();
+
+          // Disconnect analyser from destination on pause
+          try {
+            if (analyserRef.current) {
+              analyserRef.current.disconnect();
+            }
+          } catch (err) {
+            // Ignore disconnect errors
+          }
         }}
         onEnded={() => {
           const idx = tracks.findIndex((t) => t.id === currentId);
           if (tracks[idx + 1]) selectTrack(tracks[idx + 1]);
+        }}
+        onError={(e) => {
+          console.error("Audio error:", e.currentTarget.error);
+          setIsPlaying(false);
         }}
       />
     </div>
