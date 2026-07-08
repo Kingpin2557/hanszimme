@@ -251,24 +251,65 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       <audio
         ref={audioRef}
         onPlay={() => {
+          console.log("[audio] onPlay", {
+            src: audioRef.current?.src,
+            currentTime: audioRef.current?.currentTime,
+            duration: audioRef.current?.duration,
+            paused: audioRef.current?.paused,
+            readyState: audioRef.current?.readyState,
+          });
           setIsPlaying(true);
-          startLogging();
+          try {
+            startLogging();
+          } catch (e) {
+            console.log("[audio] startLogging() threw:", e);
+          }
         }}
         onPause={() => {
+          console.log("[audio] onPause", {
+            src: audioRef.current?.src,
+            currentTime: audioRef.current?.currentTime,
+            paused: audioRef.current?.paused,
+          });
           setIsPlaying(false);
-          stopLogging();
+          try {
+            stopLogging();
+          } catch (e) {
+            console.log("[audio] stopLogging() threw:", e);
+          }
         }}
         onEnded={() => {
+          console.log("[audio] onEnded");
           const index = tracks.findIndex((t) => t.id === currentId);
           const next = tracks[index + 1];
           if (next) selectTrack(next);
-          else {
-            setIsPlaying(false);
-            stopLogging();
+          else setIsPlaying(false);
+        }}
+        onLoadedMetadata={(e) => {
+          const a = e.currentTarget;
+          console.log("[audio] onLoadedMetadata", {
+            duration: a.duration,
+            currentTime: a.currentTime,
+            readyState: a.readyState,
+          });
+          setDuration(a.duration || 0);
+        }}
+        onTimeUpdate={(e) => {
+          const a = e.currentTarget;
+          // log only sometimes to avoid spamming
+          if (Math.floor(a.currentTime) !== Math.floor(currentTime)) {
+            setCurrentTime(a.currentTime);
           }
         }}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+        onWaiting={() => console.log("[audio] onWaiting")}
+        onStalled={() => console.log("[audio] onStalled")}
+        onError={(e) => {
+          const a = e.currentTarget;
+          console.log("[audio] onError", {
+            code: a.error?.code,
+            message: a.error?.message || `MEDIA_ERR_${a.error?.code ?? "?"}`,
+          });
+        }}
       />
     </div>
   );
