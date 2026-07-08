@@ -31,7 +31,7 @@ function Detail({ movie }: DetailProps) {
           <div className="c-detail__meta">
             <CountryFlag code={movie.origin_country.code} />
             <p>
-              ★ {movie.rating.score} / 10 ·{" "}
+              ★ {movie.rating.score} / 10
               <a
                 href={`https://www.themoviedb.org/movie/${movie.id}`}
                 target="_blank"
@@ -46,7 +46,9 @@ function Detail({ movie }: DetailProps) {
             ref={overviewRef}
             className="c-detail__overview"
             data-clickable={isTruncated || undefined}
-            title={isTruncated ? "Click to read the full description" : undefined}
+            title={
+              isTruncated ? "Click to read the full description" : undefined
+            }
             onClick={
               isTruncated ? () => dialogRef.current?.showModal() : undefined
             }
