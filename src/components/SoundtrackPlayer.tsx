@@ -177,33 +177,19 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
-  async function unlockAudio() {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.muted = true;
-
-    try {
-      await audio.play();
-      audio.pause();
-      audio.currentTime = 0;
-    } catch (err) {
-      console.log("Audio unlock failed:", err);
-    }
-
-    audio.muted = false;
-  }
-
   async function selectTrack(track: Track) {
     const audio = audioRef.current;
     if (!audio) return;
 
     ensureGraphInitialized();
 
+    // Toggle current track
     if (currentId === track.id) {
       if (audio.paused) {
-        await audio.play();
-        await resumeAudioContextIfNeeded(); // Use it here
+        await resumeAudioContextIfNeeded().catch(() => {});
+        audio
+          .play()
+          .catch((err) => console.log("play() failed (toggle):", err));
       } else {
         audio.pause();
       }
@@ -211,31 +197,23 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
 
     setCurrentId(track.id);
-    audio.src = `${API}/api/preview/${track.id}`;
+    setIsPlaying(false);
+    setDuration(0);
+    setCurrentTime(0);
+    stopLogging();
 
-    await new Promise((resolve) => {
-      audio.onloadedmetadata = resolve;
-      audio.load();
-    });
+    audio.crossOrigin = "anonymous";
+    audio.src = `${API}/api/preview/${track.id}`;
+    audio.load();
 
     try {
       await audio.play();
-      await resumeAudioContextIfNeeded(); // Use it here
+      await resumeAudioContextIfNeeded();
+      // onPlay will startLogging + setIsPlaying
     } catch (err) {
       console.log("play() failed:", err);
     }
   }
-
-  const onPlay = () => {
-    setIsPlaying(true);
-
-    // Resume context only here
-    if (audioCtxRef.current?.state === "suspended") {
-      audioCtxRef.current.resume();
-    }
-
-    startLogging();
-  };
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     const audio = audioRef.current;
@@ -276,10 +254,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
                 type="button"
                 className="c-player__track"
                 data-active={isActive || undefined}
-                onClick={async () => {
-                  await unlockAudio();
-                  await selectTrack(track);
-                }}
+                onClick={() => selectTrack(track)}
               >
                 <span className="c-player__icon">
                   {isActive && isPlaying ? <PauseIcon /> : <PlayIcon />}
@@ -313,33 +288,45 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         ref={audioRef}
         crossOrigin="anonymous"
         preload="metadata"
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)} // Resolves "never read" error
-        onLoadStart={() => {
-          console.log("AUDIO: load started");
-        }}
-        onLoadedMetadata={(e) => {
-          console.log("AUDIO: metadata loaded", e.currentTarget.duration);
-
-          const a = e.currentTarget;
-          setDuration(a.duration || 0);
-        }}
-        onCanPlay={() => {
-          console.log("AUDIO: can play");
-        }}
-        onPlay={onPlay}
-        onPlaying={() => {
-          console.log("AUDIO: ACTUALLY PLAYING");
+        onPlay={() => {
+          setIsPlaying(true);
+          resumeAudioContextIfNeeded()
+            .finally(() => {
+              ensureGraphInitialized();
+              startLogging();
+            })
+            .catch(() => {
+              ensureGraphInitialized();
+              startLogging();
+            });
         }}
         onPause={() => {
-          console.log("AUDIO: PAUSED");
           setIsPlaying(false);
           stopLogging();
         }}
         onEnded={() => {
-          console.log("AUDIO: ENDED");
+          const index = tracks.findIndex((t) => t.id === currentId);
+          const next = tracks[index + 1];
+          if (next) selectTrack(next);
+          else {
+            setIsPlaying(false);
+            stopLogging();
+          }
+        }}
+        onLoadedMetadata={(e) => {
+          const a = e.currentTarget;
+          setDuration(a.duration || 0);
+        }}
+        onTimeUpdate={(e) => {
+          const a = e.currentTarget;
+          setCurrentTime(a.currentTime);
         }}
         onError={(e) => {
-          console.log("AUDIO ERROR", e.currentTarget.error);
+          const a = e.currentTarget;
+          console.log("audio error:", {
+            code: a.error?.code,
+            message: a.error?.message || `MEDIA_ERR_${a.error?.code ?? "?"}`,
+          });
         }}
       />
     </div>
