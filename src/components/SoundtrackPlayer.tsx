@@ -40,8 +40,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   // Refs for audio elements – one per track
   const audioRefs = useRef<Map<number, HTMLAudioElement>>(new Map());
-  // Store duration per track
   const durationMap = useRef<Map<number, number>>(new Map());
+
   // Web Audio graph – shared across tracks
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -158,7 +158,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  // Play a specific track (by its audio element)
+  // ====== CORE PLAYBACK ======
   async function playTrack(track: Track) {
     if (isTransitioning.current) return;
     isTransitioning.current = true;
@@ -170,11 +170,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       const audio = audioRefs.current.get(track.id);
       if (!audio) throw new Error(`No audio element for track ${track.id}`);
 
-      // Pause all other tracks and clear their ended listeners
+      // Pause all other tracks
       for (const [id, el] of audioRefs.current) {
-        if (id !== track.id) {
+        if (id !== track.id && !el.paused) {
           el.pause();
-          el.onended = null;
         }
       }
 
@@ -247,22 +246,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       await audio.play();
       console.log(`[Audio] Playing track ${track.id}`);
 
-      // Attach ended listener for auto-advance
-      audio.onended = () => {
-        console.log("[Audio] Track ended, advancing...");
-        const nextIdx = currentTrackIndexRef.current + 1;
-        if (tracks[nextIdx]) {
-          currentTrackIndexRef.current = nextIdx;
-          setTimeout(() => playTrack(tracks[nextIdx]), 150);
-        } else if (tracks.length > 0) {
-          currentTrackIndexRef.current = 0;
-          setTimeout(() => playTrack(tracks[0]), 500);
-        } else {
-          setIsPlaying(false);
-          stopLogging();
-        }
-      };
-
       setIsPlaying(true);
       setCurrentId(track.id);
       setError(null);
@@ -283,7 +266,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
   }
 
-  // User click on a track
+  // ====== USER INTERACTION ======
   async function selectTrack(track: Track) {
     const audio = audioRefs.current.get(track.id);
     if (!audio || isLoading || isTransitioning.current) return;
@@ -292,8 +275,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       // Toggle
       if (isPlaying) {
         audio.pause();
-        // Clear ended listener when pausing manually
-        audio.onended = null;
         setIsPlaying(false);
         stopLogging();
       } else {
@@ -314,6 +295,48 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     await playTrack(track);
   }
 
+  // ====== EVENT HANDLERS (attached via React props) ======
+
+  function handleEnded(trackId: number) {
+    console.log("[Audio] Track ended:", trackId);
+    const idx = tracks.findIndex(t => t.id === trackId);
+    if (idx === -1) return;
+
+    const nextIdx = idx + 1;
+    if (tracks[nextIdx]) {
+      console.log("[Audio] Auto‑advancing to:", tracks[nextIdx].title);
+      currentTrackIndexRef.current = nextIdx;
+      setTimeout(() => playTrack(tracks[nextIdx]), 150);
+    } else if (tracks.length > 0) {
+      console.log("[Audio] Album finished, looping to first track");
+      currentTrackIndexRef.current = 0;
+      setTimeout(() => playTrack(tracks[0]), 500);
+    } else {
+      setIsPlaying(false);
+      stopLogging();
+    }
+  }
+
+  function handleDurationChange(trackId: number, e: React.SyntheticEvent<HTMLAudioElement>) {
+    const audio = e.currentTarget;
+    const dur = audio.duration;
+    if (Number.isFinite(dur)) {
+      durationMap.current.set(trackId, dur);
+      if (currentId === trackId) {
+        setDuration(dur);
+      }
+    }
+  }
+
+  function handleTimeUpdate(trackId: number, e: React.SyntheticEvent<HTMLAudioElement>) {
+    // Only update state if this track is the active one
+    if (currentId !== trackId) return;
+    const t = e.currentTarget.currentTime;
+    if (Number.isFinite(t)) {
+      setCurrentTime(t);
+    }
+  }
+
   // Seek bar
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     if (!currentId) return;
@@ -326,7 +349,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     setCurrentTime(newTime);
   }
 
-  // Load track list from API
+  // ====== LOAD TRACKS ======
   useEffect(() => {
     fetch(`${API}/api/movie/${movieId}/tracks`)
       .then((res) => {
@@ -342,24 +365,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         setError("Failed to load soundtrack");
       });
   }, [movieId]);
-
-  // Update currentTime from the playing audio element
-  useEffect(() => {
-    if (!currentId) return;
-    const audio = audioRefs.current.get(currentId);
-    if (!audio) return;
-
-    const update = () => {
-      if (isPlaying && audio) {
-        const t = audio.currentTime;
-        if (isFinite(t)) setCurrentTime(t);
-      }
-    };
-    audio.addEventListener("timeupdate", update);
-    return () => {
-      audio.removeEventListener("timeupdate", update);
-    };
-  }, [currentId, isPlaying]);
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -442,16 +447,12 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
             }}
             preload="metadata"
             src={`${API}/api/preview/${track.id}`}
-            onLoadedMetadata={(e) => {
-              const dur = e.currentTarget.duration;
-              if (isFinite(dur)) {
-                durationMap.current.set(track.id, dur);
-                // If this track is currently selected, update UI duration
-                if (currentId === track.id) {
-                  setDuration(dur);
-                }
-              }
-            }}
+            // Duration changes (FFmpeg stream may update this)
+            onDurationChange={(e) => handleDurationChange(track.id, e)}
+            // Time updates
+            onTimeUpdate={(e) => handleTimeUpdate(track.id, e)}
+            // Auto‑advance on ended
+            onEnded={() => handleEnded(track.id)}
             onError={(e) => {
               console.error(`[Audio] Error loading track ${track.id}:`, e.currentTarget.error);
             }}
