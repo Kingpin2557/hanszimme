@@ -17,8 +17,8 @@
     --color-panel: hsl(240, 8%, 8%);                      /* #121215 — matches background */
     --color-surface: hsl(240, 8%, 11%);                   /* #1a1a1f — cards slightly lighter */
     --color-surface-hover: hsla(45, 74%, 63%, 0.08);      /* hover — with alpha */
-    --color-border: hsl(45, 74%, 63%);                    /* #E6B45A — SOLID gold border */
-    --color-border-strong: hsl(45, 74%, 63%);             /* #E6B45A — SOLID gold border */
+    --color-border: hsl(45, 40%, 45%);                    /* muted gold, lower lightness & saturation */
+    --color-border-strong: hsl(45, 50%, 52%);             /* slightly stronger but still soft */
     --color-text: hsl(45, 20%, 90%);                      /* #ece7dd — warm off-white */
     --color-text-muted: hsl(40, 8%, 60%);                 /* #a49e92 — muted text */
     --color-accent: hsl(45, 74%, 63%);                    /* #E6B45A — candle gold */
