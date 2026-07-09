@@ -103,9 +103,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           return (buffer[idx] / 255).toFixed(3);
         });
 
-        // Only log every 10th frame to reduce noise
+        // Only log every 30th frame to reduce noise
         frameCount++;
-        if (frameCount % 10 === 0) {
+        if (frameCount % 30 === 0) {
           console.log(`HZFFT|${bands.join(",")}`);
         }
 
@@ -119,14 +119,14 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  function initAudioGraph() {
+  async function initAudioGraph() {
     if (!audioRef.current) {
       console.warn("No audio element available");
       return;
     }
 
     try {
-      // Clean up everything first
+      // Clean up existing graph first - IMPORTANT!
       if (sourceRef.current) {
         try {
           sourceRef.current.disconnect();
@@ -141,35 +141,46 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         analyserRef.current = null;
       }
 
-      if (audioCtxRef.current) {
-        try {
-          audioCtxRef.current.close();
-        } catch (e) {}
+      // Check if we need to create a new context
+      if (audioCtxRef.current && audioCtxRef.current.state === "closed") {
         audioCtxRef.current = null;
       }
 
-      // Create new context
-      console.log("Creating new audio context");
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Create new context if needed
+      if (!audioCtxRef.current) {
+        console.log("Creating new audio context");
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-      // Create media source from audio element
-      const source = ctx.createMediaElementSource(audioRef.current);
+        // CRITICAL: The audio element must have a src before creating the source
+        if (!audioRef.current.src || audioRef.current.src === "") {
+          console.warn("Audio element has no src, will initialize after src is set");
+          audioCtxRef.current = ctx;
+          return;
+        }
 
-      // Create analyser
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.8;
+        // Create media source from audio element
+        const source = ctx.createMediaElementSource(audioRef.current);
 
-      // Connect: source -> analyser -> destination
-      source.connect(analyser);
-      analyser.connect(ctx.destination);
+        // Create analyser
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.8;
 
-      audioCtxRef.current = ctx;
-      analyserRef.current = analyser;
-      sourceRef.current = source;
+        // CRITICAL: Connect source -> analyser -> destination
+        source.connect(analyser);
+        analyser.connect(ctx.destination);
 
-      console.log("Audio graph initialized successfully");
-      console.log("Context state:", ctx.state);
+        audioCtxRef.current = ctx;
+        analyserRef.current = analyser;
+        sourceRef.current = source;
+
+        console.log("Audio graph initialized successfully");
+        console.log("Context state:", ctx.state);
+      } else if (audioCtxRef.current.state === "suspended") {
+        // Context exists but is suspended, resume it
+        console.log("Resuming existing audio context");
+        await audioCtxRef.current.resume();
+      }
     } catch (err) {
       console.error("Failed to initialize audio graph:", err);
     }
@@ -212,6 +223,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       const audioUrl = `${API}/api/preview/${track.id}`;
       console.log("Loading audio from:", audioUrl);
 
+      // Set the source BEFORE initializing the audio graph
       audio.src = audioUrl;
 
       // Wait for audio to be ready
@@ -253,10 +265,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         audio.load();
       });
 
-      // Initialize audio graph
-      initAudioGraph();
+      // Initialize audio graph AFTER the src is set and audio is loaded
+      await initAudioGraph();
 
-      // Resume audio context - CRITICAL for Web Audio to work
+      // Resume audio context
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
         console.log("Resuming audio context...");
         await audioCtxRef.current.resume();
@@ -267,6 +279,14 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       console.log("Starting playback...");
       await audio.play();
       console.log("Playback started successfully");
+
+      // Verify audio is playing through the analyser
+      if (analyserRef.current) {
+        const testBuffer = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(testBuffer);
+        const sum = testBuffer.reduce((a, b) => a + b, 0);
+        console.log("Initial audio data sum:", sum);
+      }
 
     } catch (err) {
       console.error("Playback failed:", err);
