@@ -89,7 +89,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       analyser.connect(ctx.destination);
       audioCtxRef.current = ctx;
       analyserRef.current = analyser;
-      console.log("[Audio] Shared graph initialised");
     } catch (err) {
       console.error("[Audio] Failed to init shared graph:", err);
     }
@@ -115,15 +114,13 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       if (ctx.state === "suspended") {
         ctx.resume().catch(console.error);
       }
-
-      console.log("[Audio] Connected new audio element to graph");
     } catch (err) {
       console.error("[Audio] Failed to connect element:", err);
       throw new Error(`Connection failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  // FFT logging
+  // FFT logging – only this and HZGRAD remain
   function stopLogging() {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -133,7 +130,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   function startLogging() {
     if (!analyserRef.current) {
-      console.warn("[Audio] No analyser");
+      console.warn("[Audio] No analyser – cannot log FFT");
       return;
     }
     const buffer = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -244,7 +241,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       // Play
       await audio.play();
-      console.log(`[Audio] Playing track ${track.id}`);
 
       setIsPlaying(true);
       setCurrentId(track.id);
@@ -298,17 +294,14 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   // ====== EVENT HANDLERS (attached via React props) ======
 
   function handleEnded(trackId: number) {
-    console.log("[Audio] Track ended:", trackId);
     const idx = tracks.findIndex(t => t.id === trackId);
     if (idx === -1) return;
 
     const nextIdx = idx + 1;
     if (tracks[nextIdx]) {
-      console.log("[Audio] Auto‑advancing to:", tracks[nextIdx].title);
       currentTrackIndexRef.current = nextIdx;
       setTimeout(() => playTrack(tracks[nextIdx]), 150);
     } else if (tracks.length > 0) {
-      console.log("[Audio] Album finished, looping to first track");
       currentTrackIndexRef.current = 0;
       setTimeout(() => playTrack(tracks[0]), 500);
     } else {
@@ -329,7 +322,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   }
 
   function handleTimeUpdate(trackId: number, e: React.SyntheticEvent<HTMLAudioElement>) {
-    // Only update state if this track is the active one
     if (currentId !== trackId) return;
     const t = e.currentTarget.currentTime;
     if (Number.isFinite(t)) {
@@ -361,7 +353,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         setTracks(data.tracks);
       })
       .catch((err) => {
-        console.error("[API] Error:", err);
+        console.error("[API] Track fetch error:", err);
         setError("Failed to load soundtrack");
       });
   }, [movieId]);
@@ -447,11 +439,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
             }}
             preload="metadata"
             src={`${API}/api/preview/${track.id}`}
-            // Duration changes (FFmpeg stream may update this)
             onDurationChange={(e) => handleDurationChange(track.id, e)}
-            // Time updates
             onTimeUpdate={(e) => handleTimeUpdate(track.id, e)}
-            // Auto‑advance on ended
             onEnded={() => handleEnded(track.id)}
             onError={(e) => {
               console.error(`[Audio] Error loading track ${track.id}:`, e.currentTarget.error);
