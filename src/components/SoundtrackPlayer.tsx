@@ -43,6 +43,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const rafRef = useRef<number | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const isGraphInitialized = useRef(false);
 
   const activeBandsCount = 16;
 
@@ -52,45 +53,55 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
-  // Cleanup on unmount
+  // Initialize audio graph ONCE when component mounts
   useEffect(() => {
-    return () => {
-      stopLogging();
-      cleanupAudioGraph();
-      if (audioRef.current) {
-        try {
-          audioRef.current.pause();
-          audioRef.current.src = "";
-        } catch (e) {}
+    if (!audioRef.current || isGraphInitialized.current) return;
+
+    const initAudioGraphOnce = async () => {
+      try {
+        console.log("Initializing audio graph once...");
+
+        // Create audio context
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+        // Create media source from audio element - THIS ONLY HAPPENS ONCE
+        const source = ctx.createMediaElementSource(audioRef.current!);
+
+        // Create analyser
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        analyser.smoothingTimeConstant = 0.8;
+
+        // Connect: source -> analyser -> destination
+        source.connect(analyser);
+        analyser.connect(ctx.destination);
+
+        audioCtxRef.current = ctx;
+        analyserRef.current = analyser;
+        sourceRef.current = source;
+        isGraphInitialized.current = true;
+
+        console.log("Audio graph initialized permanently");
+        console.log("Context state:", ctx.state);
+      } catch (err) {
+        console.error("Failed to initialize audio graph:", err);
       }
     };
-  }, []);
 
-  function cleanupAudioGraph() {
-    // Disconnect and clean up source
-    if (sourceRef.current) {
-      try {
-        sourceRef.current.disconnect();
-      } catch (e) {}
-      sourceRef.current = null;
-    }
+    initAudioGraphOnce();
 
-    // Disconnect and clean up analyser
-    if (analyserRef.current) {
-      try {
-        analyserRef.current.disconnect();
-      } catch (e) {}
-      analyserRef.current = null;
-    }
-
-    // Close audio context
-    if (audioCtxRef.current && audioCtxRef.current.state === "running") {
-      try {
-        audioCtxRef.current.close();
-      } catch (e) {}
-    }
-    audioCtxRef.current = null;
-  }
+    // Cleanup on unmount
+    return () => {
+      stopLogging();
+      if (audioCtxRef.current) {
+        try {
+          audioCtxRef.current.close();
+        } catch (e) {}
+        audioCtxRef.current = null;
+      }
+      isGraphInitialized.current = false;
+    };
+  }, []); // Empty dependency array - runs once on mount
 
   function stopLogging() {
     if (rafRef.current) {
@@ -133,55 +144,19 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  async function initAudioGraph() {
-    if (!audioRef.current) {
-      console.warn("No audio element available");
-      return;
-    }
-
-    try {
-      // Clean up existing graph first - CRITICAL for track switching
-      cleanupAudioGraph();
-
-      // Create new context
-      console.log("Creating new audio context");
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-
-      // Create media source from audio element
-      const source = ctx.createMediaElementSource(audioRef.current);
-
-      // Create analyser
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.8;
-
-      // Connect: source -> analyser -> destination
-      source.connect(analyser);
-      analyser.connect(ctx.destination);
-
-      audioCtxRef.current = ctx;
-      analyserRef.current = analyser;
-      sourceRef.current = source;
-
-      console.log("Audio graph initialized successfully");
-      console.log("Context state:", ctx.state);
-    } catch (err) {
-      console.error("Failed to initialize audio graph:", err);
-    }
-  }
-
   async function playTrack(track: Track) {
     const audio = audioRef.current;
     if (!audio) return;
 
     try {
-      // Reset audio element
-      audio.src = "";
-      audio.load();
-
-      // Set new source
+      // Just change the src - the existing MediaElementSourceNode will handle it
       const audioUrl = `${API}/api/preview/${track.id}`;
       console.log("Loading audio from:", audioUrl);
+
+      // Pause current playback
+      audio.pause();
+
+      // Change src
       audio.src = audioUrl;
 
       // Wait for audio to be ready
@@ -223,10 +198,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         audio.load();
       });
 
-      // Initialize audio graph
-      await initAudioGraph();
-
-      // Resume audio context
+      // Resume audio context if suspended
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
         console.log("Resuming audio context...");
         await audioCtxRef.current.resume();
@@ -240,6 +212,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       setIsPlaying(true);
       setCurrentId(track.id);
+      setCurrentTime(0);
+      setDuration(0);
       setError(null);
 
       if (album?.artwork) logAlbumGradient(album.artwork);
@@ -277,7 +251,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         return;
       }
 
-      // Different track - play it
+      // Different track - play it (reuses the same audio graph)
       await playTrack(track);
 
     } catch (err) {
@@ -298,11 +272,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       console.log("Track ended, advancing to next");
       const idx = tracks.findIndex((t) => t.id === currentId);
       if (idx !== -1 && tracks[idx + 1]) {
-        // Play next track
         const nextTrack = tracks[idx + 1];
         console.log("Playing next track:", nextTrack.title);
-        setCurrentTime(0);
-        setDuration(0);
+        // Reuse the same graph, just play the next track
         playTrack(nextTrack);
       } else {
         console.log("No more tracks in album");
