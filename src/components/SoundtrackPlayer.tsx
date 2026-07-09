@@ -40,6 +40,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   // Refs for audio elements – one per track
   const audioRefs = useRef<Map<number, HTMLAudioElement>>(new Map());
+  // Store duration per track
+  const durationMap = useRef<Map<number, number>>(new Map());
   // Web Audio graph – shared across tracks
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -84,7 +86,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 64;
       analyser.smoothingTimeConstant = 0.8;
-      // Connect analyser to destination once
       analyser.connect(ctx.destination);
       audioCtxRef.current = ctx;
       analyserRef.current = analyser;
@@ -97,7 +98,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   // Connect a specific audio element to the shared analyser
   function connectAudioElement(audio: HTMLAudioElement) {
     try {
-      // Disconnect previous active source
       if (activeSourceRef.current) {
         try { activeSourceRef.current.disconnect(); } catch (e) {}
         activeSourceRef.current = null;
@@ -108,13 +108,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       const analyser = analyserRef.current;
       if (!analyser) throw new Error("Analyser not ready");
 
-      // Create a new source node for this audio element
       const source = ctx.createMediaElementSource(audio);
-      source.connect(analyser); // analyser is already connected to destination
-
+      source.connect(analyser);
       activeSourceRef.current = source;
 
-      // Resume context if suspended
       if (ctx.state === "suspended") {
         ctx.resume().catch(console.error);
       }
@@ -173,10 +170,11 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       const audio = audioRefs.current.get(track.id);
       if (!audio) throw new Error(`No audio element for track ${track.id}`);
 
-      // Pause all other tracks
+      // Pause all other tracks and clear their ended listeners
       for (const [id, el] of audioRefs.current) {
-        if (id !== track.id && !el.paused) {
+        if (id !== track.id) {
           el.pause();
+          el.onended = null;
         }
       }
 
@@ -234,9 +232,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         });
       }
 
-      // Update duration
-      if (isFinite(audio.duration)) {
-        setDuration(audio.duration);
+      // Set duration from map or from audio element
+      const dur = durationMap.current.get(track.id) ?? audio.duration;
+      if (isFinite(dur)) {
+        setDuration(dur);
       }
 
       // Resume context if suspended
@@ -247,6 +246,22 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       // Play
       await audio.play();
       console.log(`[Audio] Playing track ${track.id}`);
+
+      // Attach ended listener for auto-advance
+      audio.onended = () => {
+        console.log("[Audio] Track ended, advancing...");
+        const nextIdx = currentTrackIndexRef.current + 1;
+        if (tracks[nextIdx]) {
+          currentTrackIndexRef.current = nextIdx;
+          setTimeout(() => playTrack(tracks[nextIdx]), 150);
+        } else if (tracks.length > 0) {
+          currentTrackIndexRef.current = 0;
+          setTimeout(() => playTrack(tracks[0]), 500);
+        } else {
+          setIsPlaying(false);
+          stopLogging();
+        }
+      };
 
       setIsPlaying(true);
       setCurrentId(track.id);
@@ -277,6 +292,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       // Toggle
       if (isPlaying) {
         audio.pause();
+        // Clear ended listener when pausing manually
+        audio.onended = null;
         setIsPlaying(false);
         stopLogging();
       } else {
@@ -296,33 +313,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     // Different track
     await playTrack(track);
   }
-
-  // Auto-advance: listen to the 'ended' event on the currently playing audio
-  useEffect(() => {
-    if (!currentId) return;
-    const audio = audioRefs.current.get(currentId);
-    if (!audio) return;
-
-    const onEnded = () => {
-      console.log("[Audio] Track ended");
-      const nextIdx = currentTrackIndexRef.current + 1;
-      if (tracks[nextIdx]) {
-        currentTrackIndexRef.current = nextIdx;
-        setTimeout(() => playTrack(tracks[nextIdx]), 150);
-      } else if (tracks.length > 0) {
-        currentTrackIndexRef.current = 0;
-        setTimeout(() => playTrack(tracks[0]), 500);
-      } else {
-        setIsPlaying(false);
-        stopLogging();
-      }
-    };
-
-    audio.addEventListener("ended", onEnded);
-    return () => {
-      audio.removeEventListener("ended", onEnded);
-    };
-  }, [currentId, tracks]);
 
   // Seek bar
   function seek(e: React.MouseEvent<HTMLDivElement>) {
@@ -453,9 +443,13 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
             preload="metadata"
             src={`${API}/api/preview/${track.id}`}
             onLoadedMetadata={(e) => {
-              // When metadata loads, we could store duration if needed
-              if (currentId === track.id && isFinite(e.currentTarget.duration)) {
-                setDuration(e.currentTarget.duration);
+              const dur = e.currentTarget.duration;
+              if (isFinite(dur)) {
+                durationMap.current.set(track.id, dur);
+                // If this track is currently selected, update UI duration
+                if (currentId === track.id) {
+                  setDuration(dur);
+                }
               }
             }}
             onError={(e) => {
