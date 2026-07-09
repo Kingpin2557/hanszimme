@@ -46,7 +46,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const isGraphInitialized = useRef(false);
   const isTransitioning = useRef(false);
   const currentTrackIndexRef = useRef<number>(-1);
-  const timeUpdateRAF = useRef<number | null>(null);
 
   const activeBandsCount = 16;
 
@@ -89,10 +88,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
     return () => {
       stopLogging();
-      if (timeUpdateRAF.current) {
-        cancelAnimationFrame(timeUpdateRAF.current);
-        timeUpdateRAF.current = null;
-      }
       if (sourceRef.current) {
         try {
           sourceRef.current.disconnect();
@@ -183,19 +178,19 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  // Use timeupdate event for reliable time tracking
+  // Use native audio events for time tracking
   const handleTimeUpdate = (e: React.SyntheticEvent<HTMLAudioElement>) => {
     const time = e.currentTarget.currentTime;
-    console.log(
-      "paused:",
-      e.currentTarget.paused,
-      "time:",
-      e.currentTarget.currentTime,
-      "readyState:",
-      e.currentTarget.readyState
-    );
     if (Number.isFinite(time)) {
       setCurrentTime(time);
+    }
+  };
+
+  const handleLoadedMetadata = (e: React.SyntheticEvent<HTMLAudioElement>) => {
+    const dur = e.currentTarget.duration;
+    if (Number.isFinite(dur)) {
+      setDuration(dur);
+      console.log("Duration set:", dur);
     }
   };
 
@@ -223,7 +218,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       const audioUrl = `${API}/api/preview/${track.id}`;
       console.log("Loading audio from:", audioUrl);
       audio.src = audioUrl;
+      audio.load();
 
+      // Wait for metadata
       await new Promise<void>((resolve, reject) => {
         let isResolved = false;
         const timeout = setTimeout(() => {
@@ -263,7 +260,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
         audio.addEventListener("loadedmetadata", onLoadedMetadata);
         audio.addEventListener("error", onError);
-        audio.load();
       });
 
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
@@ -306,15 +302,12 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     if (!audio || isLoading || isTransitioning.current) return;
 
     if (currentId === track.id) {
+      // Toggle playback using native controls
       if (isPlaying) {
         audio.pause();
-        setIsPlaying(false);
-        stopLogging();
       } else {
         try {
           await audio.play();
-          setIsPlaying(true);
-          setTimeout(() => startLogging(), 200);
         } catch (err) {
           console.error("Failed to resume:", err);
           await playTrack(track);
@@ -376,17 +369,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     };
   }, [tracks]);
 
-  function seek(e: React.MouseEvent<HTMLDivElement>) {
-    const audio = audioRef.current;
-    if (!audio || !audio.duration || !Number.isFinite(audio.duration)) return;
-    const bar = e.currentTarget.getBoundingClientRect();
-    const newTime = ((e.clientX - bar.left) / bar.width) * audio.duration;
-    if (isFinite(newTime) && newTime >= 0 && newTime <= audio.duration) {
-      audio.currentTime = newTime;
-      setCurrentTime(newTime);
-    }
-  }
-
   useEffect(() => {
     fetch(`${API}/api/movie/${movieId}/tracks`)
       .then((res) => {
@@ -402,8 +384,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         setError("Failed to load soundtrack");
       });
   }, [movieId]);
-
-  const progress = duration && isFinite(duration) ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className="c-player">
@@ -477,11 +457,11 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
                   <span className="c-player__time">
                     {formatTime(currentTime)}
                   </span>
-                  <div className="c-player__seek" onClick={seek}>
+                  <div className="c-player__seek">
                     <div
                       className="c-player__seek-fill"
                       style={{
-                        width: `${Math.min(100, Math.max(0, progress))}%`,
+                        width: `${Math.min(100, Math.max(0, (currentTime / duration) * 100))}%`,
                       }}
                     />
                   </div>
@@ -497,6 +477,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         ref={audioRef}
         preload="auto"
         onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
         onLoadedData={() => {
           console.log("Data loaded");
         }}
@@ -509,7 +490,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           setError(null);
           if (album?.artwork) logAlbumGradient(album.artwork);
         }}
-
         onPause={() => {
           console.log("Paused");
           setIsPlaying(false);
