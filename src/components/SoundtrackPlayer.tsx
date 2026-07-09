@@ -44,9 +44,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const rafRef = useRef<number | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const isGraphInitialized = useRef(false);
-  const timeUpdateInterval = useRef<number | null>(null);
   const isTransitioning = useRef(false);
   const currentTrackIndexRef = useRef<number>(-1);
+  const timeUpdateRAF = useRef<number | null>(null);
 
   const activeBandsCount = 16;
 
@@ -70,8 +70,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         analyser.fftSize = 64;
         analyser.smoothingTimeConstant = 0.8;
 
-        // SINGLE CONNECTION: source -> analyser -> destination
-        // NO duplicate connections anywhere else
         source.connect(analyser);
         analyser.connect(ctx.destination);
 
@@ -91,9 +89,9 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
     return () => {
       stopLogging();
-      if (timeUpdateInterval.current) {
-        cancelAnimationFrame(timeUpdateInterval.current);
-        timeUpdateInterval.current = null;
+      if (timeUpdateRAF.current) {
+        cancelAnimationFrame(timeUpdateRAF.current);
+        timeUpdateRAF.current = null;
       }
       if (sourceRef.current) {
         try {
@@ -185,42 +183,16 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  // Manual time update loop for more reliable scrubbing
-  useEffect(() => {
+  // Use timeupdate event for reliable time tracking
+  const handleTimeUpdate = () => {
     const audio = audioRef.current;
-    if (!audio) return;
-
-    const updateTime = () => {
-      if (audio && isPlaying) {
-        const time = audio.currentTime;
-        if (isFinite(time)) {
-          setCurrentTime(time);
-        }
-        if (isPlaying) {
-          timeUpdateInterval.current = requestAnimationFrame(updateTime);
-        }
-      }
-    };
-
-    if (isPlaying) {
-      if (timeUpdateInterval.current) {
-        cancelAnimationFrame(timeUpdateInterval.current);
-      }
-      timeUpdateInterval.current = requestAnimationFrame(updateTime);
-    } else {
-      if (timeUpdateInterval.current) {
-        cancelAnimationFrame(timeUpdateInterval.current);
-        timeUpdateInterval.current = null;
+    if (audio) {
+      const time = audio.currentTime;
+      if (isFinite(time) && time > 0) {
+        setCurrentTime(time);
       }
     }
-
-    return () => {
-      if (timeUpdateInterval.current) {
-        cancelAnimationFrame(timeUpdateInterval.current);
-        timeUpdateInterval.current = null;
-      }
-    };
-  }, [isPlaying]);
+  };
 
   async function playTrack(track: Track) {
     const audio = audioRef.current;
@@ -232,26 +204,21 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     stopLogging();
 
     try {
-      // Pause first
       audio.pause();
 
-      // Reset states
+      // Reset time display
       setCurrentTime(0);
       setDuration(0);
 
-      // SAFER: Remove src attribute before loading
       audio.removeAttribute("src");
       audio.load();
 
-      // Small delay for CEF to process
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      // Set new src
       const audioUrl = `${API}/api/preview/${track.id}`;
       console.log("Loading audio from:", audioUrl);
       audio.src = audioUrl;
 
-      // Wait for metadata
       await new Promise<void>((resolve, reject) => {
         let isResolved = false;
         const timeout = setTimeout(() => {
@@ -294,14 +261,12 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         audio.load();
       });
 
-      // Resume audio context if suspended
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
         console.log("Resuming audio context...");
         await audioCtxRef.current.resume();
         console.log("Audio context resumed, state:", audioCtxRef.current.state);
       }
 
-      // Start playback
       console.log("Starting playback...");
       await audio.play();
       console.log("Playback started successfully");
@@ -317,7 +282,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       if (album?.artwork) logAlbumGradient(album.artwork);
 
-      // Delayed start logging to ensure audio is flowing
       setTimeout(() => {
         startLogging();
       }, 200);
@@ -365,14 +329,11 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     const handleEnded = () => {
       console.log("Track finished");
 
-      // Use ref instead of state to avoid stale closures
       const nextIndex = currentTrackIndexRef.current + 1;
 
       if (tracks[nextIndex]) {
         console.log("Playing next:", tracks[nextIndex].title);
-        // Update ref before playing
         currentTrackIndexRef.current = nextIndex;
-        // Use a small delay for clean transition
         setTimeout(() => {
           playTrack(tracks[nextIndex]);
         }, 150);
@@ -408,7 +369,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("stalled", handleStalled);
     };
-  }, [tracks]); // Remove currentId dependency - use ref instead
+  }, [tracks]);
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     const audio = audioRef.current;
@@ -529,8 +490,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       <audio
         ref={audioRef}
-        // REMOVED crossOrigin - CEF has issues with it
         preload="auto"
+        onTimeUpdate={handleTimeUpdate}
         onLoadedData={() => {
           console.log("Data loaded");
         }}
