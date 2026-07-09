@@ -28,7 +28,6 @@ interface SoundtrackPlayerProps {
   movieId: number;
 }
 
-// Each track gets its own audio element – we store refs in a map
 export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const [album, setAlbum] = useState<Album | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -41,7 +40,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   // Refs for audio elements – one per track
   const audioRefs = useRef<Map<number, HTMLAudioElement>>(new Map());
-  // Web Audio graph – one context shared, but we switch the active source connection
+  // Web Audio graph – shared across tracks
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const activeSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -58,22 +57,24 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
-  // Clean up Web Audio graph
-  function cleanupAudioGraph() {
-    stopLogging();
-    if (activeSourceRef.current) {
-      try { activeSourceRef.current.disconnect(); } catch (e) {}
-      activeSourceRef.current = null;
-    }
-    if (analyserRef.current) {
-      try { analyserRef.current.disconnect(); } catch (e) {}
-      analyserRef.current = null;
-    }
-    if (audioCtxRef.current) {
-      try { audioCtxRef.current.close(); } catch (e) {}
-      audioCtxRef.current = null;
-    }
-  }
+  // Clean up Web Audio on unmount
+  useEffect(() => {
+    return () => {
+      stopLogging();
+      if (activeSourceRef.current) {
+        try { activeSourceRef.current.disconnect(); } catch (e) {}
+        activeSourceRef.current = null;
+      }
+      if (analyserRef.current) {
+        try { analyserRef.current.disconnect(); } catch (e) {}
+        analyserRef.current = null;
+      }
+      if (audioCtxRef.current) {
+        try { audioCtxRef.current.close(); } catch (e) {}
+        audioCtxRef.current = null;
+      }
+    };
+  }, []);
 
   // Shared analyser and context – initialised once
   function initSharedAudioGraph() {
@@ -83,6 +84,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 64;
       analyser.smoothingTimeConstant = 0.8;
+      // Connect analyser to destination once
+      analyser.connect(ctx.destination);
       audioCtxRef.current = ctx;
       analyserRef.current = analyser;
       console.log("[Audio] Shared graph initialised");
@@ -91,7 +94,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
   }
 
-  // Connect a specific audio element to the shared analyser and destination
+  // Connect a specific audio element to the shared analyser
   function connectAudioElement(audio: HTMLAudioElement) {
     try {
       // Disconnect previous active source
@@ -107,11 +110,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       // Create a new source node for this audio element
       const source = ctx.createMediaElementSource(audio);
-      source.connect(analyser);
-      // Ensure analyser is connected to destination (only once)
-      if (!analyserRef.current?.isConnected) {
-        analyser.connect(ctx.destination);
-      }
+      source.connect(analyser); // analyser is already connected to destination
 
       activeSourceRef.current = source;
 
@@ -171,7 +170,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     stopLogging();
 
     try {
-      // Get the audio element for this track
       const audio = audioRefs.current.get(track.id);
       if (!audio) throw new Error(`No audio element for track ${track.id}`);
 
@@ -189,9 +187,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       // Ensure shared graph exists
       initSharedAudioGraph();
 
-      // If the selected track is already playing, just resume (if paused)
+      // If already playing, just resume
       if (!audio.paused) {
-        // already playing – do nothing
         setIsPlaying(true);
         setCurrentId(track.id);
         const idx = tracks.findIndex(t => t.id === track.id);
@@ -233,12 +230,11 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           };
           audio.addEventListener("loadedmetadata", onLoaded);
           audio.addEventListener("error", onError);
-          // If src is already set, load may already be in progress; but we can call load() just in case
           audio.load();
         });
       }
 
-      // Update duration from the audio element
+      // Update duration
       if (isFinite(audio.duration)) {
         setDuration(audio.duration);
       }
