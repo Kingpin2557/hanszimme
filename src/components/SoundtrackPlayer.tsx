@@ -446,6 +446,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         {tracks.map((track) => (
           <audio
             key={track.id}
+            crossOrigin="anonymous"
             ref={(el) => {
               if (el) audioRefs.current.set(track.id, el);
             }}
