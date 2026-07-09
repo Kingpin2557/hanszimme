@@ -37,7 +37,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadProgress, setLoadProgress] = useState(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -53,9 +52,29 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
+  // Cleanup audio context on unmount
+  useEffect(() => {
+    return () => {
+      stopLogging();
+      if (audioCtxRef.current) {
+        try {
+          audioCtxRef.current.close();
+        } catch (e) {}
+      }
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        } catch (e) {}
+      }
+    };
+  }, []);
+
   function stopLogging() {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
   }
 
   function startLogging() {
@@ -79,6 +98,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     if (!audioRef.current) return;
 
     try {
+      // Clean up existing graph
       if (sourceRef.current) {
         try {
           sourceRef.current.disconnect();
@@ -91,9 +111,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       }
 
       if (!audioCtxRef.current) {
-        const ctx = new (
-          window.AudioContext || (window as any).webkitAudioContext
-        )();
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
         const source = ctx.createMediaElementSource(audioRef.current);
         const analyser = ctx.createAnalyser();
         analyser.fftSize = 64;
@@ -101,6 +119,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         audioCtxRef.current = ctx;
         analyserRef.current = analyser;
         sourceRef.current = source;
+        console.log("Audio graph initialized");
       }
     } catch (err) {
       console.error("Failed to initialize audio graph:", err);
@@ -113,24 +132,27 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
     setIsLoading(true);
     setError(null);
-    setLoadProgress(0);
     stopLogging();
 
     try {
+      // Pause and reset
       audio.pause();
       audio.src = "";
       audio.load();
 
       initAudioGraph();
 
+      // Resume audio context if suspended
       try {
         if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
           await audioCtxRef.current.resume();
+          console.log("Audio context resumed");
         }
       } catch (err) {
         console.error("Failed to resume audio context:", err);
       }
 
+      // If same track, toggle playback
       if (currentId === track.id) {
         try {
           if (isPlaying) {
@@ -150,47 +172,43 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       setCurrentTime(0);
       setDuration(0);
 
-      // Use the existing preview endpoint
       const audioUrl = `${API}/api/preview/${track.id}`;
       console.log("Loading audio from:", audioUrl);
 
-      // Set the source
       audio.src = audioUrl;
 
-      // For WAV, we need to wait for the file to load
-      // Use a longer timeout since WAV conversion takes time
+      // Use canplay event for faster loading
       await new Promise<void>((resolve, reject) => {
         let isResolved = false;
-
         const timeout = setTimeout(() => {
           if (!isResolved) {
-            audio.removeEventListener("loadeddata", onLoadedData);
             audio.removeEventListener("canplay", onCanPlay);
-            audio.removeEventListener("error", onError);
-            reject(new Error("Loading timeout - WAV conversion may be slow"));
-          }
-        }, 45000); // 45 second timeout for WAV conversion
-
-        const onLoadedData = () => {
-          if (!isResolved) {
-            isResolved = true;
-            clearTimeout(timeout);
             audio.removeEventListener("loadeddata", onLoadedData);
-            audio.removeEventListener("canplay", onCanPlay);
             audio.removeEventListener("error", onError);
-            console.log("WAV data loaded");
-            resolve();
+            reject(new Error("Loading timeout"));
           }
-        };
+        }, 30000);
 
         const onCanPlay = () => {
           if (!isResolved) {
             isResolved = true;
             clearTimeout(timeout);
-            audio.removeEventListener("loadeddata", onLoadedData);
             audio.removeEventListener("canplay", onCanPlay);
+            audio.removeEventListener("loadeddata", onLoadedData);
             audio.removeEventListener("error", onError);
-            console.log("WAV can play");
+            console.log("Audio can play");
+            resolve();
+          }
+        };
+
+        const onLoadedData = () => {
+          if (!isResolved) {
+            isResolved = true;
+            clearTimeout(timeout);
+            audio.removeEventListener("canplay", onCanPlay);
+            audio.removeEventListener("loadeddata", onLoadedData);
+            audio.removeEventListener("error", onError);
+            console.log("Audio data loaded");
             resolve();
           }
         };
@@ -199,33 +217,27 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           if (!isResolved) {
             isResolved = true;
             clearTimeout(timeout);
-            audio.removeEventListener("loadeddata", onLoadedData);
             audio.removeEventListener("canplay", onCanPlay);
+            audio.removeEventListener("loadeddata", onLoadedData);
             audio.removeEventListener("error", onError);
             const error = audio.error;
-            console.error("WAV load error:", error?.code, error?.message);
-            reject(
-              new Error(
-                `Audio load failed: ${error?.message || "Unknown error"}`,
-              ),
-            );
+            console.error("Audio load error:", error?.code, error?.message);
+            reject(new Error(error?.message || "Unknown error"));
           }
         };
 
-        audio.addEventListener("loadeddata", onLoadedData);
         audio.addEventListener("canplay", onCanPlay);
+        audio.addEventListener("loadeddata", onLoadedData);
         audio.addEventListener("error", onError);
         audio.load();
       });
 
-      console.log("Attempting to play WAV audio...");
       await audio.play();
-      console.log("WAV audio playing successfully");
+      console.log("Audio playing successfully");
+
     } catch (err) {
       console.error("Playback failed:", err);
-      setError(
-        err instanceof Error ? err.message : "Failed to load or play audio",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load or play audio");
       setIsPlaying(false);
     } finally {
       setIsLoading(false);
@@ -258,8 +270,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       });
   }, [movieId]);
 
-  const progress =
-    duration && isFinite(duration) ? (currentTime / duration) * 100 : 0;
+  const progress = duration && isFinite(duration) ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className="c-player">
@@ -297,7 +308,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         <div
           style={{ color: "#e6b45a", fontSize: "0.85rem", padding: "0.5rem" }}
         >
-          ⏳ Loading audio... (WAV conversion may take a moment)
+          ⏳ Loading audio...
         </div>
       )}
 
@@ -352,7 +363,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       <audio
         ref={audioRef}
         crossOrigin="anonymous"
-        preload="auto"
+        preload="metadata"
         onTimeUpdate={(e) => {
           const time = e.currentTarget.currentTime;
           if (isFinite(time)) setCurrentTime(time);
@@ -360,16 +371,16 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         onLoadedMetadata={(e) => {
           const dur = e.currentTarget.duration;
           if (isFinite(dur)) setDuration(dur);
-          console.log("WAV metadata loaded, duration:", dur);
+          console.log("Metadata loaded, duration:", dur);
         }}
         onLoadedData={() => {
-          console.log("WAV data loaded");
+          console.log("Data loaded");
         }}
         onCanPlay={() => {
-          console.log("WAV can play event fired");
+          console.log("Can play event");
         }}
         onPlaying={() => {
-          console.log("WAV playing event fired");
+          console.log("Playing event");
           setIsPlaying(true);
           setError(null);
           if (album?.artwork) logAlbumGradient(album.artwork);
@@ -388,7 +399,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           startLogging();
         }}
         onPause={() => {
-          console.log("WAV paused");
+          console.log("Paused");
           setIsPlaying(false);
           stopLogging();
 
@@ -399,7 +410,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           } catch (err) {}
         }}
         onEnded={() => {
-          console.log("WAV ended");
+          console.log("Ended");
           const idx = tracks.findIndex((t) => t.id === currentId);
           if (tracks[idx + 1]) {
             selectTrack(tracks[idx + 1]);
@@ -411,15 +422,13 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         onError={(e) => {
           const audio = e.currentTarget;
           const error = audio.error;
-          console.error("WAV error:", error?.code, error?.message);
+          console.error("Audio error:", error?.code, error?.message);
 
           let errorMessage = "Playback error";
           if (error?.code === 1) errorMessage = "Playback was aborted";
-          else if (error?.code === 2)
-            errorMessage = "Network error - check connection";
+          else if (error?.code === 2) errorMessage = "Network error";
           else if (error?.code === 3) errorMessage = "Audio decoding failed";
-          else if (error?.code === 4)
-            errorMessage = "Audio format not supported";
+          else if (error?.code === 4) errorMessage = "Audio format not supported";
 
           setError(errorMessage);
           setIsPlaying(false);
@@ -427,22 +436,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           stopLogging();
         }}
         onStalled={() => {
-          console.warn("WAV stalled, attempting recovery...");
-        }}
-        onProgress={() => {
-          // Track loading progress
-          const audio = audioRef.current;
-          if (audio && audio.buffered.length > 0) {
-            const buffered = audio.buffered.end(0);
-            const dur = audio.duration;
-            if (dur > 0) {
-              const progress = Math.round((buffered / dur) * 100);
-              if (progress !== loadProgress) {
-                setLoadProgress(progress);
-                console.log(`WAV loading: ${progress}%`);
-              }
-            }
-          }
+          console.warn("Audio stalled, attempting recovery...");
         }}
       />
     </div>
