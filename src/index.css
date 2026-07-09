@@ -12,26 +12,28 @@
        DESIGN TOKENS — single source of truth. Edit here only.
        ============================================================ */
 
-    /* ---- Colors: dark, cinematic, candle-lit ---- */
-    --color-bg: #0e0e12;                         /* deep backdrop */
-    --color-panel: rgba(18, 18, 22, 0.92);       /* glass sidebar */
-    --color-surface: rgba(255, 255, 255, 0.04);  /* cards */
-    --color-surface-hover: rgba(230, 180, 90, 0.08);
-    --color-border: rgba(230, 180, 90, 0.22);    /* gold hairline */
-    --color-border-strong: rgba(230, 180, 90, 0.55);
-    --color-text: #ece7dd;                        /* warm off-white */
-    --color-text-muted: #a49e92;
-    --color-accent: #e6b45a;                      /* candle gold */
-    --color-accent-hover: #f2c775;
+    /* ---- Colors: dark, cinematic, candle-lit (all hsl) ---- */
+    --color-bg: hsl(240, 8%, 8%);                         /* #121215 — deep backdrop */
+    --color-panel: hsl(240, 8%, 8%);                      /* #121215 — matches background */
+    --color-surface: hsl(240, 8%, 11%);                   /* #1a1a1f — cards slightly lighter */
+    --color-surface-hover: hsla(45, 74%, 63%, 0.08);      /* hover — with alpha */
+    --color-border: hsl(45, 74%, 63%);                    /* #E6B45A — SOLID gold border */
+    --color-border-strong: hsl(45, 74%, 63%);             /* #E6B45A — SOLID gold border */
+    --color-text: hsl(45, 20%, 90%);                      /* #ece7dd — warm off-white */
+    --color-text-muted: hsl(40, 8%, 60%);                 /* #a49e92 — muted text */
+    --color-accent: hsl(45, 74%, 63%);                    /* #E6B45A — candle gold */
+    --color-accent-hover: hsl(45, 85%, 72%);              /* #f2c775 — lighter gold */
 
-    /* ---- Candle / flame ---- */
-    --flame-core: #fff6cf;
-    --flame-mid: #ffcf70;
-    --flame-outer: #ff8a1e;
-    --flame-tip: #ff5a00;
-    --flame-glow: rgba(255, 176, 74, 0.65);
-    --wax-top: #f6ecd4;
-    --wax-bottom: #cbb488;
+    /* ---- Candle / flame (all hsl/hsla) ---- */
+    --flame-core: hsl(50, 100%, 90%);                     /* #fff6cf — white-gold */
+    --flame-mid: hsl(40, 100%, 72%);                      /* #ffcf70 — orange-gold */
+    --flame-outer: hsl(25, 100%, 56%);                    /* #ff8a1e — deep orange */
+    --flame-tip: hsl(15, 100%, 50%);                      /* #ff5a00 — red-orange */
+    --flame-glow: hsla(35, 100%, 65%, 0.65);              /* glow with alpha */
+    --wax-top: hsl(45, 70%, 85%);                         /* #f6ecd4 — warm wax */
+    --wax-bottom: hsl(40, 40%, 70%);                      /* #cbb488 — darker wax */
+
+    /* ---- Candle dimensions ---- */
     --candle-flame-w: 9px;
     --candle-flame-h: 15px;
     --candle-body-w: 10px;
@@ -62,7 +64,7 @@
     --card-poster-height: 150px;
 
     /* ---- Effects ---- */
-    --shadow-panel: 0 20px 60px rgba(0, 0, 0, 0.55);
+    --shadow-panel: 0 20px 60px hsla(0, 0%, 0%, 0.55);    /* shadow with alpha */
     --blur-panel: blur(12px);
     --transition: 0.2s ease;
 
@@ -70,7 +72,6 @@
     color: var(--color-text);
     background-color: var(--color-bg);
 }
-
 a {
     font-weight: 500;
     color: var(--color-accent);
