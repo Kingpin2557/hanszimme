@@ -28,6 +28,7 @@ interface SoundtrackPlayerProps {
   movieId: number;
 }
 
+// Each track gets its own audio element – we store refs in a map
 export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const [album, setAlbum] = useState<Album | null>(null);
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -38,34 +39,31 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Refs for audio graph
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Refs for audio elements – one per track
+  const audioRefs = useRef<Map<number, HTMLAudioElement>>(new Map());
+  // Web Audio graph – one context shared, but we switch the active source connection
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const activeSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const rafRef = useRef<number | null>(null);
 
-  // Track switching guards
   const isTransitioning = useRef(false);
   const currentTrackIndexRef = useRef<number>(-1);
 
-  // Force new audio element on track change
-  const [audioKey, setAudioKey] = useState(0);
-
   const activeBandsCount = 16;
 
-  // UI: sync document class with playing state
+  // Sync playing state with CSS
   useEffect(() => {
     document.documentElement.classList.toggle("is-playing", isPlaying);
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
-  // Clean up audio graph resources
+  // Clean up Web Audio graph
   function cleanupAudioGraph() {
     stopLogging();
-    if (sourceRef.current) {
-      try { sourceRef.current.disconnect(); } catch (e) {}
-      sourceRef.current = null;
+    if (activeSourceRef.current) {
+      try { activeSourceRef.current.disconnect(); } catch (e) {}
+      activeSourceRef.current = null;
     }
     if (analyserRef.current) {
       try { analyserRef.current.disconnect(); } catch (e) {}
@@ -77,44 +75,59 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
   }
 
-  // Build a fresh audio graph for the current audio element
-  async function setupAudioGraph(): Promise<void> {
-    const audio = audioRef.current;
-    if (!audio) {
-      throw new Error("No audio element available to connect");
-    }
-
+  // Shared analyser and context – initialised once
+  function initSharedAudioGraph() {
+    if (audioCtxRef.current) return;
     try {
-      // Ensure old graph is gone
-      cleanupAudioGraph();
-
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const source = ctx.createMediaElementSource(audio);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 64;
       analyser.smoothingTimeConstant = 0.8;
-
-      source.connect(analyser);
-      analyser.connect(ctx.destination);
-
       audioCtxRef.current = ctx;
       analyserRef.current = analyser;
-      sourceRef.current = source;
-
-      console.log("[Audio] Graph set up for new audio element");
-
-      // Resume if suspended
-      if (ctx.state === "suspended") {
-        await ctx.resume();
-        console.log("[Audio] Context resumed");
-      }
+      console.log("[Audio] Shared graph initialised");
     } catch (err) {
-      console.error("[Audio] Graph setup failed:", err);
-      throw new Error(`Audio graph setup failed: ${err instanceof Error ? err.message : String(err)}`);
+      console.error("[Audio] Failed to init shared graph:", err);
     }
   }
 
-  // FFT logging loop
+  // Connect a specific audio element to the shared analyser and destination
+  function connectAudioElement(audio: HTMLAudioElement) {
+    try {
+      // Disconnect previous active source
+      if (activeSourceRef.current) {
+        try { activeSourceRef.current.disconnect(); } catch (e) {}
+        activeSourceRef.current = null;
+      }
+
+      const ctx = audioCtxRef.current;
+      if (!ctx) throw new Error("AudioContext not ready");
+      const analyser = analyserRef.current;
+      if (!analyser) throw new Error("Analyser not ready");
+
+      // Create a new source node for this audio element
+      const source = ctx.createMediaElementSource(audio);
+      source.connect(analyser);
+      // Ensure analyser is connected to destination (only once)
+      if (!analyserRef.current?.isConnected) {
+        analyser.connect(ctx.destination);
+      }
+
+      activeSourceRef.current = source;
+
+      // Resume context if suspended
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(console.error);
+      }
+
+      console.log("[Audio] Connected new audio element to graph");
+    } catch (err) {
+      console.error("[Audio] Failed to connect element:", err);
+      throw new Error(`Connection failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // FFT logging
   function stopLogging() {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -124,136 +137,134 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
   function startLogging() {
     if (!analyserRef.current) {
-      console.warn("[Audio] No analyser node – cannot start logging");
+      console.warn("[Audio] No analyser");
       return;
     }
-
     const buffer = new Uint8Array(analyserRef.current.frequencyBinCount);
     let frameCount = 0;
-
     const tick = () => {
       try {
         analyserRef.current?.getByteFrequencyData(buffer);
         const bands = Array.from({ length: activeBandsCount }, (_, b) => {
-          const idx = Math.floor(
-            (b / (activeBandsCount - 1)) * (buffer.length - 1)
-          );
+          const idx = Math.floor((b / (activeBandsCount - 1)) * (buffer.length - 1));
           return (buffer[idx] / 255).toFixed(3);
         });
-
         frameCount++;
         if (frameCount % 30 === 0) {
           console.log(`HZFFT|${bands.join(",")}`);
         }
-
         rafRef.current = requestAnimationFrame(tick);
       } catch (err) {
-        console.error("[Audio] Logging loop error:", err);
+        console.error("[Audio] Logging error:", err);
         stopLogging();
       }
     };
-
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  // Load and play a track (creates new audio element)
+  // Play a specific track (by its audio element)
   async function playTrack(track: Track) {
-    if (isTransitioning.current) {
-      console.warn("[Audio] Already transitioning, ignoring play request");
-      return;
-    }
+    if (isTransitioning.current) return;
     isTransitioning.current = true;
     setIsLoading(true);
     setError(null);
     stopLogging();
 
     try {
-      // 1. Clean up old graph
-      cleanupAudioGraph();
+      // Get the audio element for this track
+      const audio = audioRefs.current.get(track.id);
+      if (!audio) throw new Error(`No audio element for track ${track.id}`);
 
-      // 2. Force a new audio element
-      setAudioKey((prev) => prev + 1);
-
-      // 3. Wait for React to mount the new element
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      const audio = audioRef.current;
-      if (!audio) {
-        throw new Error("Audio element not found after recreation");
+      // Pause all other tracks
+      for (const [id, el] of audioRefs.current) {
+        if (id !== track.id && !el.paused) {
+          el.pause();
+        }
       }
 
-      // 4. Reset UI time
+      // Reset UI time for this track
       setCurrentTime(0);
       setDuration(0);
 
-      // 5. Set the source URL
-      const audioUrl = `${API}/api/preview/${track.id}`;
-      console.log(`[Audio] Loading: ${audioUrl}`);
-      audio.src = audioUrl;
+      // Ensure shared graph exists
+      initSharedAudioGraph();
 
-      // 6. Wait for metadata (with timeout)
-      await new Promise<void>((resolve, reject) => {
-        let resolved = false;
-        const timeout = setTimeout(() => {
-          if (!resolved) {
+      // If the selected track is already playing, just resume (if paused)
+      if (!audio.paused) {
+        // already playing – do nothing
+        setIsPlaying(true);
+        setCurrentId(track.id);
+        const idx = tracks.findIndex(t => t.id === track.id);
+        if (idx !== -1) currentTrackIndexRef.current = idx;
+        setIsLoading(false);
+        isTransitioning.current = false;
+        return;
+      }
+
+      // Connect this audio element to the graph
+      connectAudioElement(audio);
+
+      // Wait for metadata if not yet loaded
+      if (!audio.duration || !isFinite(audio.duration)) {
+        await new Promise<void>((resolve, reject) => {
+          let resolved = false;
+          const timeout = setTimeout(() => {
+            if (!resolved) {
+              audio.removeEventListener("loadedmetadata", onLoaded);
+              audio.removeEventListener("error", onError);
+              reject(new Error("Metadata load timeout"));
+            }
+          }, 30000);
+          const onLoaded = () => {
+            if (resolved) return;
+            resolved = true;
+            clearTimeout(timeout);
             audio.removeEventListener("loadedmetadata", onLoaded);
             audio.removeEventListener("error", onError);
-            reject(new Error("Metadata load timeout (30s)"));
-          }
-        }, 30000);
+            resolve();
+          };
+          const onError = () => {
+            if (resolved) return;
+            resolved = true;
+            clearTimeout(timeout);
+            audio.removeEventListener("loadedmetadata", onLoaded);
+            audio.removeEventListener("error", onError);
+            reject(new Error(audio.error?.message || "Media error"));
+          };
+          audio.addEventListener("loadedmetadata", onLoaded);
+          audio.addEventListener("error", onError);
+          // If src is already set, load may already be in progress; but we can call load() just in case
+          audio.load();
+        });
+      }
 
-        const onLoaded = () => {
-          if (resolved) return;
-          resolved = true;
-          clearTimeout(timeout);
-          audio.removeEventListener("loadedmetadata", onLoaded);
-          audio.removeEventListener("error", onError);
-          console.log(`[Audio] Metadata loaded, duration: ${audio.duration}`);
-          if (isFinite(audio.duration)) {
-            setDuration(audio.duration);
-          }
-          resolve();
-        };
+      // Update duration from the audio element
+      if (isFinite(audio.duration)) {
+        setDuration(audio.duration);
+      }
 
-        const onError = () => {
-          if (resolved) return;
-          resolved = true;
-          clearTimeout(timeout);
-          audio.removeEventListener("loadedmetadata", onLoaded);
-          audio.removeEventListener("error", onError);
-          const err = audio.error;
-          reject(new Error(err?.message || "Unknown media error"));
-        };
+      // Resume context if suspended
+      if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+        await audioCtxRef.current.resume();
+      }
 
-        audio.addEventListener("loadedmetadata", onLoaded);
-        audio.addEventListener("error", onError);
-        audio.load();
-      });
-
-      // 7. Build fresh audio graph for this new element
-      await setupAudioGraph();
-
-      // 8. Start playback
+      // Play
       await audio.play();
-      console.log("[Audio] Playback started");
+      console.log(`[Audio] Playing track ${track.id}`);
 
       setIsPlaying(true);
       setCurrentId(track.id);
       setError(null);
 
-      const idx = tracks.findIndex((t) => t.id === track.id);
-      if (idx !== -1) {
-        currentTrackIndexRef.current = idx;
-      }
+      const idx = tracks.findIndex(t => t.id === track.id);
+      if (idx !== -1) currentTrackIndexRef.current = idx;
 
       if (album?.artwork) logAlbumGradient(album.artwork);
-
-      // Start FFT logging after a short delay
       setTimeout(() => startLogging(), 200);
 
     } catch (err) {
-      console.error("[Audio] Playback failed:", err);
-      setError(err instanceof Error ? err.message : "Failed to load or play audio");
+      console.error("[Audio] Playback error:", err);
+      setError(err instanceof Error ? err.message : "Playback failed");
       setIsPlaying(false);
     } finally {
       setIsLoading(false);
@@ -261,16 +272,13 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
   }
 
-  // User‑facing track selection
+  // User click on a track
   async function selectTrack(track: Track) {
-    const audio = audioRef.current;
-    if (!audio || isLoading || isTransitioning.current) {
-      console.warn("[Audio] Cannot select track – busy or no element");
-      return;
-    }
+    const audio = audioRefs.current.get(track.id);
+    if (!audio || isLoading || isTransitioning.current) return;
 
     if (currentId === track.id) {
-      // Toggle playback on same track
+      // Toggle
       if (isPlaying) {
         audio.pause();
         setIsPlaying(false);
@@ -282,65 +290,48 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           setTimeout(() => startLogging(), 200);
         } catch (err) {
           console.error("[Audio] Resume failed:", err);
-          setError("Failed to resume playback");
-          // Fallback: reload track
+          setError("Resume failed");
           await playTrack(track);
         }
       }
       return;
     }
 
-    // Different track – full reload
+    // Different track
     await playTrack(track);
   }
 
-  // Auto‑advance to next track
+  // Auto-advance: listen to the 'ended' event on the currently playing audio
   useEffect(() => {
-    const audio = audioRef.current;
+    if (!currentId) return;
+    const audio = audioRefs.current.get(currentId);
     if (!audio) return;
 
     const onEnded = () => {
       console.log("[Audio] Track ended");
       const nextIdx = currentTrackIndexRef.current + 1;
       if (tracks[nextIdx]) {
-        console.log(`[Audio] Advancing to: ${tracks[nextIdx].title}`);
         currentTrackIndexRef.current = nextIdx;
         setTimeout(() => playTrack(tracks[nextIdx]), 150);
+      } else if (tracks.length > 0) {
+        currentTrackIndexRef.current = 0;
+        setTimeout(() => playTrack(tracks[0]), 500);
       } else {
-        console.log("[Audio] Album finished, looping to first track");
-        if (tracks.length > 0) {
-          currentTrackIndexRef.current = 0;
-          setTimeout(() => playTrack(tracks[0]), 500);
-        } else {
-          setIsPlaying(false);
-          stopLogging();
-        }
-      }
-    };
-
-    const onStalled = () => {
-      console.warn("[Audio] Stalled – attempting recovery");
-      if (isPlaying && audio) {
-        setTimeout(() => {
-          if (audio.paused && isPlaying) {
-            audio.play().catch(console.error);
-          }
-        }, 1000);
+        setIsPlaying(false);
+        stopLogging();
       }
     };
 
     audio.addEventListener("ended", onEnded);
-    audio.addEventListener("stalled", onStalled);
-
     return () => {
       audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener("stalled", onStalled);
     };
-  }, [tracks]);
+  }, [currentId, tracks]);
 
-  // Seek bar interaction
+  // Seek bar
   function seek(e: React.MouseEvent<HTMLDivElement>) {
-    const audio = audioRef.current;
+    if (!currentId) return;
+    const audio = audioRefs.current.get(currentId);
     if (!audio || !audio.duration || !Number.isFinite(audio.duration)) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
@@ -349,7 +340,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     setCurrentTime(newTime);
   }
 
-  // Load track list
+  // Load track list from API
   useEffect(() => {
     fetch(`${API}/api/movie/${movieId}/tracks`)
       .then((res) => {
@@ -361,10 +352,28 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         setTracks(data.tracks);
       })
       .catch((err) => {
-        console.error("[API] Track fetch error:", err);
+        console.error("[API] Error:", err);
         setError("Failed to load soundtrack");
       });
   }, [movieId]);
+
+  // Update currentTime from the playing audio element
+  useEffect(() => {
+    if (!currentId) return;
+    const audio = audioRefs.current.get(currentId);
+    if (!audio) return;
+
+    const update = () => {
+      if (isPlaying && audio) {
+        const t = audio.currentTime;
+        if (isFinite(t)) setCurrentTime(t);
+      }
+    };
+    audio.addEventListener("timeupdate", update);
+    return () => {
+      audio.removeEventListener("timeupdate", update);
+    };
+  }, [currentId, isPlaying]);
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -372,13 +381,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     <div className="c-player">
       {album && (
         <div className="c-player__album">
-          {album.artwork && (
-            <img
-              className="c-player__art"
-              src={album.artwork}
-              alt={album.title}
-            />
-          )}
+          {album.artwork && <img className="c-player__art" src={album.artwork} alt={album.title} />}
           <div className="c-player__album-info">
             <div className="c-player__album-title">{album.title}</div>
             <div className="c-player__album-artist">{album.artist}</div>
@@ -387,15 +390,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       )}
 
       {error && (
-        <div
-          style={{
-            color: "#ff6b6b",
-            fontSize: "0.85rem",
-            padding: "0.5rem",
-            background: "rgba(255,0,0,0.1)",
-            borderRadius: "4px",
-          }}
-        >
+        <div style={{ color: "#ff6b6b", fontSize: "0.85rem", padding: "0.5rem", background: "rgba(255,0,0,0.1)", borderRadius: "4px" }}>
           ⚠️ {error}
         </div>
       )}
@@ -435,9 +430,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
               {isActive && isPlaying && (
                 <div className="c-player__scrubber">
-                  <span className="c-player__time">
-                    {formatTime(currentTime)}
-                  </span>
+                  <span className="c-player__time">{formatTime(currentTime)}</span>
                   <div className="c-player__seek" onClick={seek}>
                     <div
                       className="c-player__seek-fill"
@@ -452,54 +445,27 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         })}
       </ul>
 
-      {/* Hidden audio element – re‑created on key change */}
+      {/* Hidden audio elements – one per track */}
       <div style={{ display: "none" }}>
-        <audio
-          key={audioKey}
-          ref={audioRef}
-          preload="auto"
-          onTimeUpdate={(e) => {
-            const time = e.currentTarget.currentTime;
-            if (isFinite(time)) setCurrentTime(time);
-          }}
-          onLoadedMetadata={(e) => {
-            const dur = e.currentTarget.duration;
-            if (isFinite(dur)) {
-              setDuration(dur);
-              console.log(`[Audio] Metadata loaded: ${dur}s`);
-            }
-          }}
-          onLoadedData={() => console.log("[Audio] Data loaded")}
-          onCanPlay={() => console.log("[Audio] Can play")}
-          onPlaying={() => {
-            console.log("[Audio] Playing event");
-            setIsPlaying(true);
-            setError(null);
-            if (album?.artwork) logAlbumGradient(album.artwork);
-          }}
-          onPause={() => {
-            console.log("[Audio] Paused");
-            setIsPlaying(false);
-            stopLogging();
-          }}
-          onError={(e) => {
-            const audio = e.currentTarget;
-            const err = audio.error;
-            console.error("[Audio] Error:", err?.code, err?.message);
-
-            let msg = "Playback error";
-            if (err?.code === 1) msg = "Playback aborted";
-            else if (err?.code === 2) msg = "Network error";
-            else if (err?.code === 3) msg = "Decoding failed";
-            else if (err?.code === 4) msg = "Format not supported";
-
-            setError(msg);
-            setIsPlaying(false);
-            setIsLoading(false);
-            stopLogging();
-          }}
-          onStalled={() => console.warn("[Audio] Stalled")}
-        />
+        {tracks.map((track) => (
+          <audio
+            key={track.id}
+            ref={(el) => {
+              if (el) audioRefs.current.set(track.id, el);
+            }}
+            preload="metadata"
+            src={`${API}/api/preview/${track.id}`}
+            onLoadedMetadata={(e) => {
+              // When metadata loads, we could store duration if needed
+              if (currentId === track.id && isFinite(e.currentTarget.duration)) {
+                setDuration(e.currentTarget.duration);
+              }
+            }}
+            onError={(e) => {
+              console.error(`[Audio] Error loading track ${track.id}:`, e.currentTarget.error);
+            }}
+          />
+        ))}
       </div>
     </div>
   );
