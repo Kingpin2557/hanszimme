@@ -126,7 +126,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     }
 
     try {
-      // Clean up existing graph first
+      // Clean up everything first
       if (sourceRef.current) {
         try {
           sourceRef.current.disconnect();
@@ -134,35 +134,42 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         sourceRef.current = null;
       }
 
-      // Close existing context if needed
-      if (audioCtxRef.current && audioCtxRef.current.state === "closed") {
+      if (analyserRef.current) {
+        try {
+          analyserRef.current.disconnect();
+        } catch (e) {}
+        analyserRef.current = null;
+      }
+
+      if (audioCtxRef.current) {
+        try {
+          audioCtxRef.current.close();
+        } catch (e) {}
         audioCtxRef.current = null;
       }
 
-      if (!audioCtxRef.current) {
-        console.log("Creating new audio context");
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Create new context
+      console.log("Creating new audio context");
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
 
-        // Create media source from audio element
-        const source = ctx.createMediaElementSource(audioRef.current);
+      // Create media source from audio element
+      const source = ctx.createMediaElementSource(audioRef.current);
 
-        // Create analyser
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 64;
-        analyser.smoothingTimeConstant = 0.8;
+      // Create analyser
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 64;
+      analyser.smoothingTimeConstant = 0.8;
 
-        // CRITICAL: Connect source -> analyser -> destination
-        source.connect(analyser);
-        analyser.connect(ctx.destination);
+      // Connect: source -> analyser -> destination
+      source.connect(analyser);
+      analyser.connect(ctx.destination);
 
-        audioCtxRef.current = ctx;
-        analyserRef.current = analyser;
-        sourceRef.current = source;
+      audioCtxRef.current = ctx;
+      analyserRef.current = analyser;
+      sourceRef.current = source;
 
-        console.log("Audio graph initialized successfully");
-        console.log("Context state:", ctx.state);
-        console.log("Analyser node created with fftSize:", analyser.fftSize);
-      }
+      console.log("Audio graph initialized successfully");
+      console.log("Context state:", ctx.state);
     } catch (err) {
       console.error("Failed to initialize audio graph:", err);
     }
