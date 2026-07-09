@@ -70,6 +70,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         analyser.fftSize = 64;
         analyser.smoothingTimeConstant = 0.8;
 
+        // SINGLE CONNECTION: source -> analyser -> destination
+        // NO duplicate connections anywhere else
         source.connect(analyser);
         analyser.connect(ctx.destination);
 
@@ -129,7 +131,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     const handleVisibilityChange = () => {
       if (!document.hidden && isPlaying) {
         keepAlive();
-        // Also try to resume playback if paused
         if (audioRef.current && audioRef.current.paused) {
           audioRef.current.play().catch(console.error);
         }
@@ -231,18 +232,18 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     stopLogging();
 
     try {
-      // Pause current playback
+      // Pause first
       audio.pause();
 
       // Reset states
       setCurrentTime(0);
       setDuration(0);
 
-      // IMPORTANT: Reset the audio element completely
-      audio.src = "";
+      // SAFER: Remove src attribute before loading
+      audio.removeAttribute("src");
       audio.load();
 
-      // Small delay to ensure reset
+      // Small delay for CEF to process
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Set new src
@@ -250,7 +251,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       console.log("Loading audio from:", audioUrl);
       audio.src = audioUrl;
 
-      // Wait for audio to be ready
+      // Wait for metadata
       await new Promise<void>((resolve, reject) => {
         let isResolved = false;
         const timeout = setTimeout(() => {
@@ -316,7 +317,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       if (album?.artwork) logAlbumGradient(album.artwork);
 
-      // Start logging after a small delay to ensure audio is flowing
+      // Delayed start logging to ensure audio is flowing
       setTimeout(() => {
         startLogging();
       }, 200);
@@ -362,24 +363,29 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     if (!audio) return;
 
     const handleEnded = () => {
-      console.log("Track ended, advancing to next");
+      console.log("Track finished");
 
-      const idx = tracks.findIndex((t) => t.id === currentId);
-      if (idx !== -1 && tracks[idx + 1]) {
-        const nextTrack = tracks[idx + 1];
-        console.log("Playing next track:", nextTrack.title);
+      // Use ref instead of state to avoid stale closures
+      const nextIndex = currentTrackIndexRef.current + 1;
+
+      if (tracks[nextIndex]) {
+        console.log("Playing next:", tracks[nextIndex].title);
+        // Update ref before playing
+        currentTrackIndexRef.current = nextIndex;
+        // Use a small delay for clean transition
         setTimeout(() => {
-          playTrack(nextTrack);
+          playTrack(tracks[nextIndex]);
         }, 150);
       } else {
-        console.log("No more tracks in album");
-        setIsPlaying(false);
-        stopLogging();
-        if (tracks.length > 0 && currentId !== null) {
-          console.log("Looping back to first track");
+        console.log("Album finished, looping back to first track");
+        if (tracks.length > 0) {
+          currentTrackIndexRef.current = 0;
           setTimeout(() => {
             playTrack(tracks[0]);
           }, 500);
+        } else {
+          setIsPlaying(false);
+          stopLogging();
         }
       }
     };
@@ -402,7 +408,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
       audio.removeEventListener("ended", handleEnded);
       audio.removeEventListener("stalled", handleStalled);
     };
-  }, [tracks, currentId]);
+  }, [tracks]); // Remove currentId dependency - use ref instead
 
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     const audio = audioRef.current;
@@ -523,8 +529,8 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
 
       <audio
         ref={audioRef}
-        crossOrigin="anonymous"
-        preload="metadata"
+        // REMOVED crossOrigin - CEF has issues with it
+        preload="auto"
         onLoadedData={() => {
           console.log("Data loaded");
         }}
