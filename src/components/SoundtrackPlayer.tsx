@@ -18,7 +18,7 @@ const API = import.meta.env.VITE_MOVIE_API;
 
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds)) return "0:00";
-  const total = Math.round(seconds);
+  const total = Math.floor(seconds);
   const minutes = Math.floor(total / 60);
   const rest = String(total % 60).padStart(2, "0");
   return `${minutes}:${rest}`;
@@ -184,13 +184,18 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   }
 
   // Use timeupdate event for reliable time tracking
-  const handleTimeUpdate = () => {
-    const audio = audioRef.current;
-    if (audio) {
-      const time = audio.currentTime;
-      if (isFinite(time) && time > 0) {
-        setCurrentTime(time);
-      }
+  const handleTimeUpdate = (e: React.SyntheticEvent<HTMLAudioElement>) => {
+    const time = e.currentTarget.currentTime;
+    console.log(
+      "paused:",
+      e.currentTarget.paused,
+      "time:",
+      e.currentTarget.currentTime,
+      "readyState:",
+      e.currentTarget.readyState
+    );
+    if (Number.isFinite(time)) {
+      setCurrentTime(time);
     }
   };
 
@@ -504,6 +509,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
           setError(null);
           if (album?.artwork) logAlbumGradient(album.artwork);
         }}
+
         onPause={() => {
           console.log("Paused");
           setIsPlaying(false);
