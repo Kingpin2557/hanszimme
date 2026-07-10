@@ -21,7 +21,8 @@ function SidebarHeader({
     return (
       <>
         <h1>{selectedMovie?.title}</h1>
-        <button onClick={() => navigate(iso ? `/?iso=${iso}` : "/")}>
+        {/* Return to wherever the user came from (world or a country view). */}
+        <button onClick={() => navigate(-1)}>
           <ArrowLeftIcon className="c-btn-icon" />
           Back
         </button>

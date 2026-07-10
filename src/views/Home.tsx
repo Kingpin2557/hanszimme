@@ -92,7 +92,6 @@ function Home() {
             slug={movieSlug}
             movie={selectedMovie}
             movies={list}
-            iso={iso}
             toolbar={iso ? undefined : <CountryFilter countries={countries} />}
           >
             <header className="o-header">

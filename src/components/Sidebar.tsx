@@ -8,7 +8,6 @@ type SidebarProps = {
   slug?: string;
   movie?: Movie;
   movies: Movie[];
-  iso?: string;
   toolbar?: React.ReactNode;
   children?: React.ReactNode;
 };
@@ -17,17 +16,16 @@ function SidebarContent({
   slug,
   movie,
   movies,
-  iso,
   toolbar,
   children,
 }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleMovieClick = (m: Movie) => {
-    // Carry the CURRENT view's country (if any) so "back" returns there.
-    // From world view (no iso) we stay in world view.
-    const query = iso ? `?iso=${iso}` : "";
-    navigate(`/${slugify(m.title)}${query}`);
+    // Add the movie's own country so the map orients to its marker. The back
+    // button uses history to return to wherever the user actually came from.
+    const countryCode = m.origin_country.code.toLowerCase();
+    navigate(`/${slugify(m.title)}?iso=${countryCode}`);
   };
 
   return (

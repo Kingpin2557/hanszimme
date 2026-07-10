@@ -595,7 +595,21 @@ header {
     transition: opacity 0.6s ease;
 }
 
-/* Transparent page so UE can compo
+/* Transparent page so UE can composite the Niagara system underneath. */
+html.is-playing,
+html.is-playing body {
+    background: transparent;
+}
+
+/* While a preview is playing, dissolve the globe + candle markers so the UE5
+   Niagara visualizer shows through; they fade back in when playback pauses. */
+html.is-playing .mapboxgl-canvas,
+html.is-playing .mapboxgl-marker,
+html.is-playing .c-candle {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Country filter dropdown (world view) */
 .c-filter {
     display: flex;

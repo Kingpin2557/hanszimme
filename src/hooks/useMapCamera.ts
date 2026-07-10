@@ -24,7 +24,13 @@ export function useMapCamera(
       });
     } else if (markers.length === 1) {
       const { lng, lat } = markers[0].origin_country.coords;
-      map.flyTo({ center: [lng, lat], zoom: 5 });
+      // Offset for the sidebar so the marker stays in front, not hidden behind it.
+      map.flyTo({
+        center: [lng, lat],
+        zoom: 5,
+        padding: { top: 0, bottom: 0, left: 0, right: 700 },
+        duration: 1500,
+      });
     } else if (markers.length > 1) {
       const lngs = markers.map((m) => m.origin_country.coords.lng);
       const lats = markers.map((m) => m.origin_country.coords.lat);
