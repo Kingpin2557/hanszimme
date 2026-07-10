@@ -124,6 +124,17 @@ function Home() {
 
   return (
     <div className="o-full">
+      {/* Decorative lamp from hans-zimmer.com, tucked bottom-left out of the way.
+          Swap the src for a local /lamp.webp when you have one. */}
+      <img
+        className="o-lamp"
+        src="/lamp.webp"
+        alt=""
+        aria-hidden="true"
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
       <Map
         ref={mapRef}
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Open+Sans:wght@400;500;600&display=swap");
 
 :root {
     font-family: var(--font-body);
@@ -12,28 +12,35 @@
 
     /* ============================================================
        DESIGN TOKENS — single source of truth. Edit here only.
+       Modern take on hans-zimmer.com: black bg, muted-purple accent,
+       dark-gray panels, Montserrat/Open Sans, grain + vignette.
        ============================================================ */
 
     /* ---- Typography ---- */
-    --font-display: "Cinzel", "Times New Roman", serif; /* epic, cinematic caps */
-    --font-body: "Inter", system-ui, Helvetica, Arial, sans-serif;
+    --font-display: "Montserrat", system-ui, Helvetica, Arial, sans-serif;
+    --font-body: "Open Sans", system-ui, Helvetica, Arial, sans-serif;
 
-    /* ---- Colors: dark, cinematic, candle-lit (solid — no alpha backgrounds) ---- */
-    --color-bg: hsl(240, 8%, 7%); /* deep backdrop */
-    --color-panel: hsl(240, 9%, 9%); /* sidebar / dialog surface */
-    --color-surface: hsl(240, 8%, 12%); /* cards, inputs */
-    --color-surface-hover: hsl(45, 30%, 14%); /* warm hover, solid */
-    --color-border: hsl(45, 30%, 28%); /* muted gold hairline */
-    --color-border-strong: hsl(45, 45%, 45%); /* stronger gold border */
-    --color-text: hsl(45, 20%, 90%); /* warm off-white */
-    --color-text-muted: hsl(40, 8%, 60%); /* muted text */
-    --color-accent: hsl(45, 74%, 63%); /* candle gold */
-    --color-accent-hover: hsl(45, 85%, 72%); /* lighter gold */
-    --color-backdrop: hsla(240, 12%, 3%, 0.5); /* dialog backdrop — the one allowed translucent bg */
-    --color-danger: hsl(2, 80%, 70%); /* error text */
-    --color-danger-surface: hsl(2, 45%, 16%); /* error background, solid */
+    /* ---- Colors (solid — no alpha backgrounds) ---- */
+    --color-bg: hsl(0, 0%, 0%); /* #000 page backdrop */
+    --color-panel: hsl(0, 0%, 13%); /* #202020 sidebar / dialog */
+    --color-surface: hsl(0, 0%, 16%); /* cards, inputs */
+    --color-surface-hover: hsl(276, 22%, 18%); /* purple-tinted hover */
+    --color-border: hsl(276, 14%, 24%); /* subtle purple-gray hairline */
+    --color-border-strong: hsl(276, 34%, 60%); /* accent purple border */
+    --color-text: hsl(0, 0%, 100%); /* white body text */
+    --color-text-muted: hsl(0, 0%, 60%); /* #999 secondary */
+    --color-accent: hsl(276, 34%, 60%); /* #a178bc muted purple */
+    --color-accent-hover: hsl(276, 44%, 72%); /* lighter purple */
+    --color-backdrop: hsla(0, 0%, 0%, 0.5); /* dialog backdrop (only translucent bg) */
+    --color-danger: hsl(2, 80%, 70%);
+    --color-danger-surface: hsl(2, 45%, 16%);
 
-    /* ---- Candle / flame (glow keeps alpha — it is a shadow, not a fill) ---- */
+    /* ---- Glows / effects (alpha ok — these are shadows, not fills) ---- */
+    --accent-glow: hsla(276, 34%, 60%, 0.45);
+    --shadow-panel: 0 20px 60px hsla(0, 0%, 0%, 0.6);
+    --transition: 0.2s ease;
+
+    /* ---- Candle / flame (kept warm — real fire against the dark UI) ---- */
     --flame-core: hsl(50, 100%, 90%);
     --flame-mid: hsl(40, 100%, 72%);
     --flame-outer: hsl(25, 100%, 56%);
@@ -41,8 +48,6 @@
     --flame-glow: hsla(35, 100%, 65%, 0.65);
     --wax-top: hsl(45, 70%, 85%);
     --wax-bottom: hsl(40, 40%, 70%);
-
-    /* ---- Candle dimensions ---- */
     --candle-flame-w: 9px;
     --candle-flame-h: 15px;
     --candle-body-w: 10px;
@@ -52,7 +57,7 @@
     --radius-xs: 2px;
     --radius-sm: 4px;
     --radius-md: 8px;
-    --radius-lg: 10px;
+    --radius-lg: 12px;
     --radius-pill: 999px;
 
     /* ---- Spacing scale ---- */
@@ -65,16 +70,15 @@
     /* ---- Layout dimensions ---- */
     --sidebar-width: 700px;
     --sidebar-inset: 50px;
-    --sidebar-padding: 15px;
+    --sidebar-padding: 20px;
     --sidebar-scroll-height: 600px;
     --badge-inset: 20px;
     --flag-width: 35px;
     --poster-height: 200px;
     --card-poster-height: 150px;
 
-    /* ---- Effects (shadows/glows may use alpha — they are not fills) ---- */
-    --shadow-panel: 0 20px 60px hsla(0, 0%, 0%, 0.55);
-    --transition: 0.2s ease;
+    /* ---- Assets (swap for a local compressed .webp in /public later) ---- */
+    --sidebar-wallpaper: url("/wallpaper.webp");
 
     color-scheme: dark;
     color: var(--color-text);
@@ -114,7 +118,8 @@ button {
     cursor: pointer;
     transition:
         border-color var(--transition),
-        color var(--transition);
+        color var(--transition),
+        background var(--transition);
 }
 button:hover {
     border-color: var(--color-border-strong);

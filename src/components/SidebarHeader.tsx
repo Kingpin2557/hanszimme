@@ -7,6 +7,10 @@ type SidebarHeaderProps = {
   selectedMovie?: Movie;
 };
 
+const hideOnError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.style.display = "none";
+};
+
 function SidebarHeader({ movieSlug, selectedMovie }: SidebarHeaderProps) {
   const navigate = useNavigate();
 
@@ -23,8 +27,19 @@ function SidebarHeader({ movieSlug, selectedMovie }: SidebarHeaderProps) {
     );
   }
 
-  // List view always keeps the brand title, even when a country is selected.
-  return <h1>Hans Zimmer</h1>;
+  // List view keeps the brand: the site logo + title (logo hides if absent).
+  return (
+    <div className="o-brand">
+      <img
+        className="o-logo"
+        src="/logo.webp"
+        alt=""
+        aria-hidden="true"
+        onError={hideOnError}
+      />
+      <h1>Hans Zimmer</h1>
+    </div>
+  );
 }
 
 export default SidebarHeader;

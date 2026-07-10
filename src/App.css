@@ -42,7 +42,9 @@ header {
     gap: var(--space-sm);
 }
 
-/* Dark glass sidebar panel */
+/* Dark panel using the site's wallpaper texture, dimmed for readability with a
+   purple vignette glow on top (hans-zimmer.com). Swap the URL for a local
+   compressed .webp in /public when you have one. */
 .o-sidebar {
     position: absolute;
     top: 50%;
@@ -56,7 +58,18 @@ header {
     overflow-y: auto;
 
     color: var(--color-text);
-    background: var(--color-panel);
+    background-color: var(--color-panel);
+    background-image:
+        radial-gradient(
+            130% 55% at 50% -10%,
+            hsla(276, 34%, 60%, 0.22),
+            transparent 60%
+        ),
+        linear-gradient(hsla(0, 0%, 6%, 0.82), hsla(0, 0%, 6%, 0.9)),
+        var(--sidebar-wallpaper);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-panel);
@@ -106,7 +119,7 @@ header {
 .c-card:hover {
     border-color: var(--color-border-strong);
     background: var(--color-surface-hover);
-    box-shadow: 0 0 18px var(--flame-glow);
+    box-shadow: 0 0 18px var(--accent-glow);
 }
 
 .c-card__info {
@@ -152,6 +165,18 @@ header {
         font-size: 1.05rem;
         padding: 0.6em 1.1em;
     }
+}
+
+/* Brand: site logo + title (logo hides itself if /logo.webp is missing). */
+.o-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.o-logo {
+    height: 2.2rem;
+    width: auto;
 }
 
 .c-btn-icon {
@@ -512,7 +537,7 @@ header {
     height: 10px;
     border-radius: var(--radius-pill);
     background: var(--color-accent);
-    box-shadow: 0 0 6px var(--flame-glow);
+    box-shadow: 0 0 6px var(--accent-glow);
 }
 
 /* Loader-error fallback screen */
@@ -609,6 +634,26 @@ html.is-playing .mapboxgl-marker,
 html.is-playing .c-candle {
     opacity: 0;
     pointer-events: none;
+}
+
+/* Decorative lamp (hans-zimmer.com), tucked in the bottom-left, out of the way
+   of the sidebar. Fades out with the globe while a preview is playing. */
+.o-lamp {
+    position: fixed;
+    left: var(--space-md);
+    bottom: 0;
+    height: 42vh;
+    max-height: 380px;
+    opacity: 0.55;
+    pointer-events: none;
+    user-select: none;
+    z-index: 2;
+    filter: drop-shadow(0 0 24px hsla(276, 34%, 60%, 0.35));
+    transition: opacity 0.6s ease;
+}
+
+html.is-playing .o-lamp {
+    opacity: 0;
 }
 
 /* Country filter dropdown (world view) */
