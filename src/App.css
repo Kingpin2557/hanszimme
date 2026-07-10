@@ -600,6 +600,7 @@ header {
 .c-filter {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: var(--space-2xs);
     margin-block-end: var(--space-sm);
 }
@@ -614,6 +615,7 @@ header {
 
 .c-filter__field {
     position: relative;
+    width: fit-content;
 }
 
 /* custom gold chevron */
@@ -631,7 +633,7 @@ header {
 }
 
 .c-filter__select {
-    width: 100%;
+    width: auto;
     appearance: none;
     -webkit-appearance: none;
     padding: var(--space-xs) calc(var(--space-lg) + var(--space-xs)) var(--space-xs)

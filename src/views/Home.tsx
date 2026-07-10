@@ -93,7 +93,7 @@ function Home() {
             movie={selectedMovie}
             movies={list}
             iso={iso}
-            toolbar={<CountryFilter countries={countries} />}
+            toolbar={iso ? undefined : <CountryFilter countries={countries} />}
           >
             <header className="o-header">
               <SidebarHeader
