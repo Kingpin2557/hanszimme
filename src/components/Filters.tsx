@@ -9,6 +9,7 @@ type FiltersProps = {
 function Filters({ countries, genres }: FiltersProps) {
   const [params, setParams] = useSearchParams();
   const iso = params.get("iso")?.toLowerCase() ?? "";
+  const country = params.get("country")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
   const minRating = params.get("minRating") ?? "";
 
@@ -27,8 +28,8 @@ function Filters({ countries, genres }: FiltersProps) {
       {!iso && (
         <Dropdown
           label="Filter by country"
-          value={iso}
-          onChange={(v) => setParam("iso", v)}
+          value={country}
+          onChange={(v) => setParam("country", v)}
           options={[
             { value: "", label: "All countries" },
             ...countries.map((c) => ({

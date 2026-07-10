@@ -24,9 +24,14 @@ function Home() {
   const mapRef = useRef<MapRef>(null);
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
+
+  // `iso`     = a country VIEW, entered by clicking a candle (zooms + chrome).
+  // `country` = the dropdown FILTER, which stays on the main world view.
   const iso = params.get("iso")?.toLowerCase() ?? "";
+  const country = params.get("country")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
   const minRating = Number(params.get("minRating")) || 0;
+  const activeCountry = iso || country;
 
   // The loader returns a discriminated { type, data }: the full list on "/",
   // a single movie on "/:movieSlug". Derive both views from it.
@@ -34,21 +39,22 @@ function Home() {
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
 
-  // Full country name for the selected iso, for the sidebar header title.
+  // Country-view header title comes from `iso` only (candle click).
   const countryName = iso
     ? allMovies.find((m) => m.origin_country?.code.toLowerCase() === iso)
         ?.origin_country.name
     : undefined;
 
-  // Poster / soundtrack validity is handled by the backend; here we dedupe and
-  // apply the country / genre / rating filters.
-  const list = allMovies.filter(
+  // Base set: deduped + genre/rating (no country). Drives the country options.
+  const baseList = allMovies.filter(
     (m, i, self) =>
       isUnique(m, i, self) &&
-      matchesCountry(m, iso) &&
       (!genre || m.genres.includes(genre)) &&
       (!minRating || m.rating.score >= minRating),
   );
+
+  // Sidebar list + markers are additionally narrowed to the active country.
+  const list = baseList.filter((m) => matchesCountry(m, activeCountry));
 
   const markers = list.filter(
     (m, i, self) =>
@@ -56,11 +62,10 @@ function Home() {
       self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
 
-  // Country options reflect the movies actually available (after the current
-  // genre/rating filters), so every option has at least one Hans Zimmer movie.
-  // (Object/Set are used because the global Map is shadowed by <Map>.)
+  // Country options: every country present for the current genre/rating (so the
+  // dropdown lets you switch between them and never offers an empty one).
   const countryNames: Record<string, string> = {};
-  for (const m of list) {
+  for (const m of baseList) {
     if (m.origin_country) {
       countryNames[m.origin_country.code] = m.origin_country.name;
     }
@@ -69,11 +74,12 @@ function Home() {
     .map(([code, name]) => ({ code, name }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Genres come from the full catalogue so the genre filter always lists all.
+  // Genres from the full catalogue so the genre filter always lists all.
   const genreSet = new Set<string>();
   for (const m of allMovies) m.genres.forEach((g) => genreSet.add(g));
   const genres = [...genreSet].sort();
 
+  // Camera only flies for a country VIEW (candle); the dropdown keeps world view.
   useMapCamera(mapRef, iso, markers);
 
   return (
@@ -91,9 +97,13 @@ function Home() {
             longitude={m.origin_country.coords.lng}
             latitude={m.origin_country.coords.lat}
             anchor="bottom"
-            onClick={() =>
-              setParams({ iso: m.origin_country.code.toLowerCase() })
-            }
+            onClick={() => {
+              // Clicking a candle enters that country's VIEW (keep genre/rating).
+              const next = new URLSearchParams(params);
+              next.set("iso", m.origin_country.code.toLowerCase());
+              next.delete("country");
+              setParams(next);
+            }}
           >
             <CandleMarker />
           </Marker>
