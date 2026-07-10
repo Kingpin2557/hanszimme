@@ -4,9 +4,10 @@ import Dropdown from "./Dropdown";
 type FiltersProps = {
   countries: { code: string; name: string }[];
   genres: string[];
+  ratings: number[];
 };
 
-function Filters({ countries, genres }: FiltersProps) {
+function Filters({ countries, genres, ratings }: FiltersProps) {
   const [params, setParams] = useSearchParams();
   const iso = params.get("iso")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
@@ -52,9 +53,10 @@ function Filters({ countries, genres }: FiltersProps) {
         onChange={(v) => setParam("minRating", v)}
         options={[
           { value: "", label: "Any rating" },
-          { value: "4", label: "At least 4 / 10" },
-          { value: "6", label: "At least 6 / 10" },
-          { value: "8", label: "At least 8 / 10" },
+          ...ratings.map((t) => ({
+            value: String(t),
+            label: `At least ${t} / 10`,
+          })),
         ]}
       />
     </div>

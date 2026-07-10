@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../hooks/useMapCamera";
@@ -17,6 +17,8 @@ const initialPos = {
   zoom: 2,
   padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
+
+const RATING_STEPS = [4, 6, 8];
 
 type LoaderData = { type: "movies"; data: Movie[] } | DetailLoaderData;
 
@@ -37,16 +39,15 @@ function Home() {
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
 
-  // Base set: deduped + genre/rating (no country). Drives the country options.
-  const baseList = allMovies.filter(
-    (m, i, self) =>
-      isUnique(m, i, self) &&
-      (!genre || m.genres.includes(genre)) &&
-      (!minRating || m.rating.score >= minRating),
-  );
+  // De-duplicate once; each filter is applied on top of this.
+  const deduped = allMovies.filter((m, i, self) => isUnique(m, i, self));
+  const matchesGenre = (m: Movie) => !genre || m.genres.includes(genre);
+  const matchesRating = (m: Movie) => !minRating || m.rating.score >= minRating;
 
-  // Sidebar list + markers are additionally narrowed to the selected country.
-  const list = baseList.filter((m) => matchesCountry(m, iso));
+  // Sidebar list + markers: all three filters applied.
+  const list = deduped.filter(
+    (m) => matchesCountry(m, iso) && matchesGenre(m) && matchesRating(m),
+  );
 
   const markers = list.filter(
     (m, i, self) =>
@@ -54,11 +55,11 @@ function Home() {
       self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
 
-  // Country options: every country present for the current genre/rating (so the
-  // dropdown lets you switch between them and never offers an empty one).
+  // Each dropdown's options exclude ITS OWN filter but respect the others, so
+  // they only ever offer choices that actually have a movie.
   const countryNames: Record<string, string> = {};
-  for (const m of baseList) {
-    if (m.origin_country) {
+  for (const m of deduped) {
+    if (m.origin_country && matchesGenre(m) && matchesRating(m)) {
       countryNames[m.origin_country.code] = m.origin_country.name;
     }
   }
@@ -66,10 +67,55 @@ function Home() {
     .map(([code, name]) => ({ code, name }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Genres from the full catalogue so the genre filter always lists all.
   const genreSet = new Set<string>();
-  for (const m of allMovies) m.genres.forEach((g) => genreSet.add(g));
+  for (const m of deduped) {
+    if (matchesCountry(m, iso) && matchesRating(m)) {
+      m.genres.forEach((g) => genreSet.add(g));
+    }
+  }
   const genres = [...genreSet].sort();
+
+  const ratingScope = deduped.filter(
+    (m) => matchesCountry(m, iso) && matchesGenre(m),
+  );
+  const ratings = RATING_STEPS.filter((t) =>
+    ratingScope.some((m) => m.rating.score >= t),
+  );
+
+  // When a country has a single movie, auto-select its genre + rating; when
+  // switching country, drop any filter that would leave it empty.
+  useEffect(() => {
+    if (movieSlug || !iso) return;
+    const inCountry = deduped.filter((m) => matchesCountry(m, iso));
+    const next = new URLSearchParams(params);
+    let changed = false;
+
+    if (inCountry.length === 1) {
+      const only = inCountry[0];
+      const g = only.genres[0] ?? "";
+      if (g && genre !== g) {
+        next.set("genre", g);
+        changed = true;
+      }
+      const step = [...RATING_STEPS].reverse().find((t) => only.rating.score >= t);
+      if (step && minRating !== step) {
+        next.set("minRating", String(step));
+        changed = true;
+      }
+    } else {
+      if (genre && !inCountry.some((m) => m.genres.includes(genre))) {
+        next.delete("genre");
+        changed = true;
+      }
+      if (minRating && !inCountry.some((m) => m.rating.score >= minRating)) {
+        next.delete("minRating");
+        changed = true;
+      }
+    }
+
+    if (changed) setParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iso, movieSlug]);
 
   useMapCamera(mapRef, iso, markers);
 
@@ -89,7 +135,6 @@ function Home() {
             latitude={m.origin_country.coords.lat}
             anchor="bottom"
             onClick={() => {
-              // Clicking a candle selects its country (keeps genre/rating).
               const next = new URLSearchParams(params);
               next.set("iso", m.origin_country.code.toLowerCase());
               setParams(next);
@@ -104,7 +149,9 @@ function Home() {
             slug={movieSlug}
             movie={selectedMovie}
             movies={list}
-            toolbar={<Filters countries={countries} genres={genres} />}
+            toolbar={
+              <Filters countries={countries} genres={genres} ratings={ratings} />
+            }
           >
             <header className="o-header">
               <SidebarHeader movieSlug={movieSlug} selectedMovie={selectedMovie} />
