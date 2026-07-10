@@ -29,7 +29,7 @@
     --color-text-muted: hsl(40, 8%, 60%); /* muted text */
     --color-accent: hsl(45, 74%, 63%); /* candle gold */
     --color-accent-hover: hsl(45, 85%, 72%); /* lighter gold */
-    --color-backdrop: hsl(240, 12%, 3%); /* modal backdrop, solid */
+    --color-backdrop: hsla(240, 12%, 3%, 0.5); /* dialog backdrop — the one allowed translucent bg */
     --color-danger: hsl(2, 80%, 70%); /* error text */
     --color-danger-surface: hsl(2, 45%, 16%); /* error background, solid */
 

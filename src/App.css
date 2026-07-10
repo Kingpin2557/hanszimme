@@ -400,6 +400,7 @@ header {
     border: 1px solid var(--color-accent);
     border-radius: var(--radius-md);
     padding-bottom: var(--space-2xs);
+    overflow: hidden; /* clip the track's hover fill to the rounded corners */
 }
 
 .c-player__track {

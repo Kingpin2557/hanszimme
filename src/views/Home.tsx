@@ -56,19 +56,22 @@ function Home() {
       self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
 
-  // Options for the filter dropdowns (built without the global Map, which is
-  // shadowed by react-map-gl's <Map> import).
+  // Country options reflect the movies actually available (after the current
+  // genre/rating filters), so every option has at least one Hans Zimmer movie.
+  // (Object/Set are used because the global Map is shadowed by <Map>.)
   const countryNames: Record<string, string> = {};
-  const genreSet = new Set<string>();
-  for (const m of allMovies) {
+  for (const m of list) {
     if (m.origin_country) {
       countryNames[m.origin_country.code] = m.origin_country.name;
     }
-    m.genres.forEach((g) => genreSet.add(g));
   }
   const countries = Object.entries(countryNames)
     .map(([code, name]) => ({ code, name }))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Genres come from the full catalogue so the genre filter always lists all.
+  const genreSet = new Set<string>();
+  for (const m of allMovies) m.genres.forEach((g) => genreSet.add(g));
   const genres = [...genreSet].sort();
 
   useMapCamera(mapRef, iso, markers);
