@@ -338,7 +338,15 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     <div className="c-player">
       {album && (
         <div className="c-player__album">
-          {album.artwork && <img className="c-player__art" src={album.artwork} alt={album.title} />}
+          {album.artwork && (
+            <img
+              className="c-player__art"
+              src={album.artwork}
+              alt={album.title}
+              width={48}
+              height={48}
+            />
+          )}
           <div className="c-player__album-info">
             <div className="c-player__album-title">{album.title}</div>
             <div className="c-player__album-artist">{album.artist}</div>

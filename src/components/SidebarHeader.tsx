@@ -7,10 +7,6 @@ type SidebarHeaderProps = {
   selectedMovie?: Movie;
 };
 
-const hideOnError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-  e.currentTarget.style.display = "none";
-};
-
 function SidebarHeader({ movieSlug, selectedMovie }: SidebarHeaderProps) {
   const navigate = useNavigate();
 
@@ -33,9 +29,9 @@ function SidebarHeader({ movieSlug, selectedMovie }: SidebarHeaderProps) {
       <img
         className="o-logo"
         src="/logo.webp"
-        alt=""
-        aria-hidden="true"
-        onError={hideOnError}
+        alt="Hans Zimmer logo"
+        width={75}
+        height={75}
       />
       <h1>Hans Zimmer</h1>
     </div>

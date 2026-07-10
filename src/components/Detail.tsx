@@ -32,7 +32,7 @@ function Detail({ movie }: DetailProps) {
   return (
     <div className="c-detail">
       <div className="c-detail__header">
-        <img src={movie.poster_path} alt={movie.title} />
+        <img src={movie.poster_path} alt={movie.title} width={500} height={750} />
         <div className="c-detail__description">
           <div className="c-detail__meta">
             <CountryFlag code={movie.origin_country.code} />

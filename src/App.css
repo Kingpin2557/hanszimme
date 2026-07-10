@@ -65,7 +65,7 @@ header {
             hsla(276, 34%, 60%, 0.22),
             transparent 60%
         ),
-        linear-gradient(hsla(0, 0%, 6%, 0.82), hsla(0, 0%, 6%, 0.9)),
+        linear-gradient(hsla(0, 0%, 5%, 0.62), hsla(0, 0%, 5%, 0.74)),
         var(--sidebar-wallpaper);
     background-size: cover;
     background-position: center;
@@ -147,7 +147,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-block-end: var(--space-sm);
+    margin-block-end: var(--space-lg);
 
     h1 {
         font-family: var(--font-display);

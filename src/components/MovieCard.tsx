@@ -9,7 +9,7 @@ function MovieCard({ movie }: MovieCardProps) {
   return (
     <div className="c-card">
       <CountryFlag code={movie.origin_country.code} />
-      <img src={movie.poster_path} alt={`${movie.title} Poster`} />
+      <img src={movie.poster_path} alt={`${movie.title} Poster`} width={500} height={750} />
       <div className="c-card__info">
         <div className="c-card__description">
           <p>{movie.title}</p>

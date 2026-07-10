@@ -124,17 +124,17 @@ function Home() {
 
   return (
     <div className="o-full">
-      {/* Decorative lamp from hans-zimmer.com, tucked bottom-left out of the way.
-          Swap the src for a local /lamp.webp when you have one. */}
-      <img
-        className="o-lamp"
-        src="/lamp.webp"
-        alt=""
-        aria-hidden="true"
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-      />
+      {/* Decorative skull lantern (hans-zimmer.com), tucked bottom-left out of
+          the way. Shown only on the brand/list view, not the detail view. */}
+      {!movieSlug && (
+        <img
+          className="o-lamp"
+          src="/lamp.webp"
+          alt="Skull lantern"
+          width={496}
+          height={979}
+        />
+      )}
       <Map
         ref={mapRef}
         mapboxAccessToken={import.meta.env.VITE_MAPBOX_TOKEN}
