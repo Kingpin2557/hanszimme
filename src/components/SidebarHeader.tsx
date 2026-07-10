@@ -23,18 +23,29 @@ function SidebarHeader({ movieSlug, selectedMovie }: SidebarHeaderProps) {
     );
   }
 
-  // List view keeps the brand: the site logo + title (logo hides if absent).
+  // List view: brand (logo + title) on the left, skull lantern on the right.
+  // The detail view renders the Back button in that right slot instead, so the
+  // lantern only shows while there is no back arrow.
   return (
-    <div className="o-brand">
+    <>
+      <div className="o-brand">
+        <img
+          className="o-logo"
+          src="/logo.webp"
+          alt="Hans Zimmer logo"
+          width={75}
+          height={75}
+        />
+        <h1>Hans Zimmer</h1>
+      </div>
       <img
-        className="o-logo"
-        src="/logo.webp"
-        alt="Hans Zimmer logo"
-        width={75}
-        height={75}
+        className="o-lamp"
+        src="/lamp.webp"
+        alt="Skull lantern"
+        width={496}
+        height={979}
       />
-      <h1>Hans Zimmer</h1>
-    </div>
+    </>
   );
 }
 

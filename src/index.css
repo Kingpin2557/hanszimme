@@ -75,7 +75,7 @@
     --badge-inset: 20px;
     --flag-width: 35px;
     --poster-height: 200px;
-    --card-poster-height: 150px;
+    --card-poster-height: 130px;
 
     /* ---- Assets (swap for a local compressed .webp in /public later) ---- */
     --sidebar-wallpaper: url("/wallpaper.webp");

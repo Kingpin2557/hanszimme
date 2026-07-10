@@ -52,10 +52,12 @@ header {
     transform: translateY(-50%);
 
     width: var(--sidebar-width);
-    height: min-content;
     max-height: 90vh;
     padding: var(--sidebar-padding);
-    overflow-y: auto;
+    /* The panel itself never scrolls; the movie list scrolls internally. */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
     color: var(--color-text);
     background-color: var(--color-panel);
@@ -112,6 +114,8 @@ header {
     img {
         border-radius: var(--radius-sm);
         height: var(--card-poster-height);
+        aspect-ratio: 2 / 3;
+        object-fit: cover;
     }
 }
 
@@ -138,8 +142,10 @@ header {
     }
 }
 
+/* The only scroll region: the movie list, like the album's track list. */
 .o-scroll {
-    height: var(--sidebar-scroll-height);
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
 }
 
@@ -254,6 +260,7 @@ header {
     img {
         height: var(--poster-height);
         width: auto;
+        aspect-ratio: 2 / 3;
         flex-shrink: 0;
         object-fit: cover;
         border-radius: var(--radius-sm);
@@ -636,24 +643,17 @@ html.is-playing .c-candle {
     pointer-events: none;
 }
 
-/* Decorative lamp (hans-zimmer.com), tucked in the bottom-left, out of the way
-   of the sidebar. Fades out with the globe while a preview is playing. */
+/* Skull lantern in the header's right corner (brand view only). It shares the
+   slot the Back button uses on the detail view, so it disappears there. */
 .o-lamp {
-    position: fixed;
-    left: var(--space-md);
-    bottom: 0;
-    height: 42vh;
-    max-height: 380px;
-    opacity: 0.55;
+    height: 3.4rem;
+    width: auto;
+    flex-shrink: 0;
+    align-self: flex-start;
+    opacity: 0.9;
     pointer-events: none;
     user-select: none;
-    z-index: 2;
-    filter: drop-shadow(0 0 24px hsla(276, 34%, 60%, 0.35));
-    transition: opacity 0.6s ease;
-}
-
-html.is-playing .o-lamp {
-    opacity: 0;
+    filter: drop-shadow(0 0 16px hsla(276, 34%, 60%, 0.4));
 }
 
 /* Country filter dropdown (world view) */
@@ -704,38 +704,4 @@ html.is-playing .o-lamp {
     -webkit-appearance: none;
     padding: var(--space-xs) calc(var(--space-lg) + var(--space-xs)) var(--space-xs)
         var(--space-sm);
-    font-family: inherit;
-    font-size: 0.95rem;
-    color: var(--color-text);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    transition: border-color var(--transition);
-}
-
-.c-filter__select:hover,
-.c-filter__select:focus {
-    border-color: var(--color-border-strong);
-    outline: none;
-}
-
-.c-filter__select option {
-    background: var(--color-panel);
-    color: var(--color-text);
-}
-
-/* Player status messages */
-.c-player__error {
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-    color: var(--color-danger);
-    background: var(--color-danger-surface);
-}
-
-.c-player__loading {
-    padding: var(--space-xs) var(--space-sm);
-    font-size: 0.85rem;
-    color: var(--color-accent);
 }
