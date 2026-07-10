@@ -12,6 +12,27 @@ type ApiMovie = {
   album: { id: number; title: string; itunesUrl: string | null } | null;
 };
 
+// Album + tracks the player needs, loaded alongside the movie so the detail
+// page renders complete (no second request popping in afterwards).
+export type PlayerAlbum = {
+  title: string;
+  artist: string;
+  artwork: string | null;
+};
+
+export type PlayerTrack = {
+  id: number;
+  title: string;
+  durationMs: number | null;
+};
+
+export type DetailLoaderData = {
+  type: "movie";
+  data: Movie;
+  album: PlayerAlbum | null;
+  tracks: PlayerTrack[];
+};
+
 const toMovie = (m: ApiMovie): Movie => ({
   Name: m.title,
   id: m.id,
@@ -31,32 +52,18 @@ const toMovie = (m: ApiMovie): Movie => ({
 
 const fetchMovies = async (path: string = "") => {
   const url = `${import.meta.env.VITE_MOVIE_API}/api/movie${path}`;
-  console.log("Fetching from URL:", url); // Debug log
 
-  try {
-    const response = await fetch(url);
-    console.log("Response status:", response.status); // Debug log
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Response error:", errorText); // Debug log
-      throw new Error(
-        `Failed to fetch movies: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    return response.json();
-  } catch (error) {
-    console.error("Fetch error:", error);
-    throw error;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch movies: ${response.status} ${response.statusText}`,
+    );
   }
+  return response.json();
 };
 
 export const movieLoader: LoaderFunction = async () => {
-  console.log("Movie loader called"); // Debug log
   const data = await fetchMovies();
-  console.log("Data received:", data); // Debug log
-
   const movies = (data.movies as ApiMovie[])
     .filter((m) => m.originCountry)
     .map(toMovie);
@@ -64,7 +71,21 @@ export const movieLoader: LoaderFunction = async () => {
 };
 
 export const movieDetailLoader: LoaderFunction = async ({ params }) => {
-  console.log("Movie detail loader called for:", params.movieSlug); // Debug log
-  const data = await fetchMovies(`/${params.movieSlug}`);
-  return { type: "movie" as "movie", data: toMovie(data as ApiMovie) };
+  const slug = params.movieSlug;
+
+  // Fetch the movie AND its soundtrack tracks in parallel so everything is
+  // ready by the time the detail page renders.
+  const [movie, soundtrack] = await Promise.all([
+    fetchMovies(`/${slug}`),
+    fetch(`${import.meta.env.VITE_MOVIE_API}/api/movie/${slug}/tracks`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null),
+  ]);
+
+  return {
+    type: "movie" as "movie",
+    data: toMovie(movie as ApiMovie),
+    album: (soundtrack?.album ?? null) as PlayerAlbum | null,
+    tracks: (soundtrack?.tracks ?? []) as PlayerTrack[],
+  };
 };

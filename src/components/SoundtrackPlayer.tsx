@@ -25,12 +25,11 @@ function formatTime(seconds: number): string {
 }
 
 interface SoundtrackPlayerProps {
-  movieId: number;
+  album: Album | null;
+  tracks: Track[];
 }
 
-export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
-  const [album, setAlbum] = useState<Album | null>(null);
-  const [tracks, setTracks] = useState<Track[]>([]);
+export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProps) {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -236,6 +235,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         await audioCtxRef.current.resume();
       }
 
+      try { audio.currentTime = 0; } catch (e) { void e; }
       await audio.play();
 
       setIsPlaying(true);
@@ -332,23 +332,6 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
     setCurrentTime(newTime);
   }
 
-  // ====== LOAD TRACKS ======
-  useEffect(() => {
-    fetch(`${API}/api/movie/${movieId}/tracks`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setAlbum(data.album);
-        setTracks(data.tracks);
-      })
-      .catch((err) => {
-        console.error("[API] Track fetch error:", err);
-        setError("Failed to load soundtrack");
-      });
-  }, [movieId]);
-
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
@@ -363,16 +346,10 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         </div>
       )}
 
-      {error && (
-        <div style={{ color: "#ff6b6b", fontSize: "0.85rem", padding: "0.5rem", background: "rgba(255,0,0,0.1)", borderRadius: "4px" }}>
-          ⚠️ {error}
-        </div>
-      )}
+      {error && <div className="c-player__error">⚠️ {error}</div>}
 
       {isLoading && (
-        <div style={{ color: "#e6b45a", fontSize: "0.85rem", padding: "0.5rem" }}>
-          ⏳ Loading audio...
-        </div>
+        <div className="c-player__loading">⏳ Loading audio...</div>
       )}
 
       <ul className="c-player__tracks">

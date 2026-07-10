@@ -4,14 +4,11 @@ import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../hooks/useMapCamera";
 import SidebarHeader from "../components/SidebarHeader";
 import CandleMarker from "../components/CandleMarker";
+import CountryFilter from "../components/CountryFilter";
 
-import {
-  hasValidPoster,
-  isUnique,
-  matchesCountry,
-  hasTidalEmbed,
-} from "../script/utils/movieFiltes";
+import { isUnique, matchesCountry } from "../script/utils/movieFiltes";
 import { type Movie } from "../types";
+import { type DetailLoaderData } from "../loaders/loadMovies";
 import Sidebar from "../components/Sidebar";
 
 const initialPos = {
@@ -21,9 +18,7 @@ const initialPos = {
   padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
 
-type LoaderData =
-  | { type: "movies"; data: Movie[] }
-  | { type: "movie"; data: Movie };
+type LoaderData = { type: "movies"; data: Movie[] } | DetailLoaderData;
 
 function Home() {
   const mapRef = useRef<MapRef>(null);
@@ -43,12 +38,10 @@ function Home() {
         ?.origin_country.name
     : undefined;
 
+  // Poster / soundtrack validity is handled by the backend, so we only dedupe
+  // and apply the country filter here.
   const list = allMovies.filter(
-    (m, i, self) =>
-      hasValidPoster(m) &&
-      isUnique(m, i, self) &&
-      matchesCountry(m, iso) &&
-      hasTidalEmbed(m),
+    (m, i, self) => isUnique(m, i, self) && matchesCountry(m, iso),
   );
 
   const markers = list.filter(
@@ -56,6 +49,18 @@ function Home() {
       i ===
       self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
+
+  // Unique countries for the filter dropdown (built without the global Map,
+  // which is shadowed by react-map-gl's <Map> import).
+  const countryNames: Record<string, string> = {};
+  for (const m of allMovies) {
+    if (m.origin_country) {
+      countryNames[m.origin_country.code] = m.origin_country.name;
+    }
+  }
+  const countries = Object.entries(countryNames)
+    .map(([code, name]) => ({ code, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   useMapCamera(mapRef, iso, markers);
 
@@ -83,7 +88,13 @@ function Home() {
         ))}
 
         <section className="o-sidebar">
-          <Sidebar slug={movieSlug} movie={selectedMovie} movies={list}>
+          <Sidebar
+            slug={movieSlug}
+            movie={selectedMovie}
+            movies={list}
+            iso={iso}
+            toolbar={<CountryFilter countries={countries} />}
+          >
             <header className="o-header">
               <SidebarHeader
                 movieSlug={movieSlug}

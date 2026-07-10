@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import { useLoaderData } from "react-router-dom";
 import { type Movie } from "../types";
+import { type DetailLoaderData } from "../loaders/loadMovies";
 import CountryFlag from "./CountryFlag";
 import Pill from "./Pill";
 import SoundtrackPlayer from "./SoundtrackPlayer";
@@ -9,6 +11,10 @@ interface DetailProps {
 }
 
 function Detail({ movie }: DetailProps) {
+  // Album + tracks come from the route loader (fetched with the movie), so the
+  // player renders immediately instead of firing its own request afterwards.
+  const { album, tracks } = useLoaderData() as DetailLoaderData;
+
   const dialogRef = useRef<HTMLDialogElement>(null);
   const overviewRef = useRef<HTMLParagraphElement>(null);
   const [isTruncated, setIsTruncated] = useState(false);
@@ -31,7 +37,7 @@ function Detail({ movie }: DetailProps) {
           <div className="c-detail__meta">
             <CountryFlag code={movie.origin_country.code} />
             <p>
-              ★ {movie.rating.score} / 10
+              ★ {movie.rating.score} / 10 ·{" "}
               <a
                 href={`https://www.themoviedb.org/movie/${movie.id}`}
                 target="_blank"
@@ -46,9 +52,7 @@ function Detail({ movie }: DetailProps) {
             ref={overviewRef}
             className="c-detail__overview"
             data-clickable={isTruncated || undefined}
-            title={
-              isTruncated ? "Click to read the full description" : undefined
-            }
+            title={isTruncated ? "Click to read the full description" : undefined}
             onClick={
               isTruncated ? () => dialogRef.current?.showModal() : undefined
             }
@@ -66,7 +70,7 @@ function Detail({ movie }: DetailProps) {
         </div>
       </div>
 
-      <SoundtrackPlayer movieId={movie.id} />
+      <SoundtrackPlayer album={album} tracks={tracks} />
 
       {isTruncated && (
         <dialog

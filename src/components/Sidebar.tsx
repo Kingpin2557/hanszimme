@@ -8,16 +8,26 @@ type SidebarProps = {
   slug?: string;
   movie?: Movie;
   movies: Movie[];
+  iso?: string;
+  toolbar?: React.ReactNode;
   children?: React.ReactNode;
 };
 
-function SidebarContent({ slug, movie, movies, children }: SidebarProps) {
+function SidebarContent({
+  slug,
+  movie,
+  movies,
+  iso,
+  toolbar,
+  children,
+}: SidebarProps) {
   const navigate = useNavigate();
 
   const handleMovieClick = (m: Movie) => {
-    const countryCode = m.origin_country.code.toLowerCase();
-    // The slug in the URL is what the detail loader uses to fetch the movie.
-    navigate(`/${slugify(m.title)}?iso=${countryCode}`);
+    // Carry the CURRENT view's country (if any) so "back" returns there.
+    // From world view (no iso) we stay in world view.
+    const query = iso ? `?iso=${iso}` : "";
+    navigate(`/${slugify(m.title)}${query}`);
   };
 
   return (
@@ -30,17 +40,20 @@ function SidebarContent({ slug, movie, movies, children }: SidebarProps) {
           <p>Movie not found</p>
         )
       ) : (
-        <div className="o-scroll o-flex">
-          {movies.map((m) => (
-            <div
-              key={m.id}
-              className="c-sidebar__card-wrapper"
-              onClick={() => handleMovieClick(m)}
-            >
-              <MovieCard movie={m} />
-            </div>
-          ))}
-        </div>
+        <>
+          {toolbar}
+          <div className="o-scroll o-flex">
+            {movies.map((m) => (
+              <div
+                key={m.id}
+                className="c-sidebar__card-wrapper"
+                onClick={() => handleMovieClick(m)}
+              >
+                <MovieCard movie={m} />
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </>
   );

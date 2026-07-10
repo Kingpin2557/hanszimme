@@ -1,5 +1,7 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600&display=swap");
+
 :root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-family: var(--font-body);
     line-height: 1.5;
     font-weight: 400;
 
@@ -12,26 +14,33 @@
        DESIGN TOKENS — single source of truth. Edit here only.
        ============================================================ */
 
-    /* ---- Colors: dark, cinematic, candle-lit (all hsl) ---- */
-    --color-bg: hsl(240, 8%, 8%);                         /* #121215 — deep backdrop */
-    --color-panel: hsl(240, 8%, 8%);                      /* #121215 — matches background */
-    --color-surface: hsl(240, 8%, 11%);                   /* #1a1a1f — cards slightly lighter */
-    --color-surface-hover: hsla(45, 74%, 63%, 0.08);      /* hover — with alpha */
-    --color-border: hsl(45, 40%, 45%);                    /* muted gold, lower lightness & saturation */
-    --color-border-strong: hsl(45, 50%, 52%);             /* slightly stronger but still soft */
-    --color-text: hsl(45, 20%, 90%);                      /* #ece7dd — warm off-white */
-    --color-text-muted: hsl(40, 8%, 60%);                 /* #a49e92 — muted text */
-    --color-accent: hsl(45, 74%, 63%);                    /* #E6B45A — candle gold */
-    --color-accent-hover: hsl(45, 85%, 72%);              /* #f2c775 — lighter gold */
+    /* ---- Typography ---- */
+    --font-display: "Cinzel", "Times New Roman", serif; /* epic, cinematic caps */
+    --font-body: "Inter", system-ui, Helvetica, Arial, sans-serif;
 
-    /* ---- Candle / flame (all hsl/hsla) ---- */
-    --flame-core: hsl(50, 100%, 90%);                     /* #fff6cf — white-gold */
-    --flame-mid: hsl(40, 100%, 72%);                      /* #ffcf70 — orange-gold */
-    --flame-outer: hsl(25, 100%, 56%);                    /* #ff8a1e — deep orange */
-    --flame-tip: hsl(15, 100%, 50%);                      /* #ff5a00 — red-orange */
-    --flame-glow: hsla(35, 100%, 65%, 0.65);              /* glow with alpha */
-    --wax-top: hsl(45, 70%, 85%);                         /* #f6ecd4 — warm wax */
-    --wax-bottom: hsl(40, 40%, 70%);                      /* #cbb488 — darker wax */
+    /* ---- Colors: dark, cinematic, candle-lit (solid — no alpha backgrounds) ---- */
+    --color-bg: hsl(240, 8%, 7%); /* deep backdrop */
+    --color-panel: hsl(240, 9%, 9%); /* sidebar / dialog surface */
+    --color-surface: hsl(240, 8%, 12%); /* cards, inputs */
+    --color-surface-hover: hsl(45, 30%, 14%); /* warm hover, solid */
+    --color-border: hsl(45, 30%, 28%); /* muted gold hairline */
+    --color-border-strong: hsl(45, 45%, 45%); /* stronger gold border */
+    --color-text: hsl(45, 20%, 90%); /* warm off-white */
+    --color-text-muted: hsl(40, 8%, 60%); /* muted text */
+    --color-accent: hsl(45, 74%, 63%); /* candle gold */
+    --color-accent-hover: hsl(45, 85%, 72%); /* lighter gold */
+    --color-backdrop: hsl(240, 12%, 3%); /* modal backdrop, solid */
+    --color-danger: hsl(2, 80%, 70%); /* error text */
+    --color-danger-surface: hsl(2, 45%, 16%); /* error background, solid */
+
+    /* ---- Candle / flame (glow keeps alpha — it is a shadow, not a fill) ---- */
+    --flame-core: hsl(50, 100%, 90%);
+    --flame-mid: hsl(40, 100%, 72%);
+    --flame-outer: hsl(25, 100%, 56%);
+    --flame-tip: hsl(15, 100%, 50%);
+    --flame-glow: hsla(35, 100%, 65%, 0.65);
+    --wax-top: hsl(45, 70%, 85%);
+    --wax-bottom: hsl(40, 40%, 70%);
 
     /* ---- Candle dimensions ---- */
     --candle-flame-w: 9px;
@@ -63,15 +72,15 @@
     --poster-height: 200px;
     --card-poster-height: 150px;
 
-    /* ---- Effects ---- */
-    --shadow-panel: 0 20px 60px hsla(0, 0%, 0%, 0.55);    /* shadow with alpha */
-    --blur-panel: blur(12px);
+    /* ---- Effects (shadows/glows may use alpha — they are not fills) ---- */
+    --shadow-panel: 0 20px 60px hsla(0, 0%, 0%, 0.55);
     --transition: 0.2s ease;
 
     color-scheme: dark;
     color: var(--color-text);
     background-color: var(--color-bg);
 }
+
 a {
     font-weight: 500;
     color: var(--color-accent);

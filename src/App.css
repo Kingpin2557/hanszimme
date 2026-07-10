@@ -59,7 +59,6 @@ header {
     background: var(--color-panel);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    backdrop-filter: var(--blur-panel);
     box-shadow: var(--shadow-panel);
 }
 
@@ -138,8 +137,11 @@ header {
     margin-block-end: var(--space-sm);
 
     h1 {
-        font-size: 1.9rem;
-        letter-spacing: 0.04em;
+        font-family: var(--font-display);
+        font-size: 1.6rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
         color: var(--color-accent);
     }
 
@@ -276,11 +278,10 @@ header {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-panel);
-    backdrop-filter: var(--blur-panel);
 }
 
 .c-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--color-backdrop);
 }
 
 .c-dialog__body {
@@ -594,18 +595,79 @@ header {
     transition: opacity 0.6s ease;
 }
 
-/* Transparent page so UE can composite the Niagara system underneath. */
-html.is-playing,
-html.is-playing body {
-    background: transparent;
+/* Transparent page so UE can compo
+/* Country filter dropdown (world view) */
+.c-filter {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    margin-block-end: var(--space-sm);
 }
 
-/* Fade the earth + candle markers, but keep the movie/album sidebar.
-   Target our own .c-candle too — react-map-gl's marker wrapper doesn't
-   reliably carry the .mapboxgl-marker class. */
-html.is-playing .mapboxgl-canvas,
-html.is-playing .mapboxgl-marker,
-html.is-playing .c-candle {
-    opacity: 0;
+.c-filter__label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.c-filter__field {
+    position: relative;
+}
+
+/* custom gold chevron */
+.c-filter__field::after {
+    content: "";
+    position: absolute;
+    right: var(--space-sm);
+    top: 50%;
+    width: 0.5em;
+    height: 0.5em;
+    border-right: 2px solid var(--color-accent);
+    border-bottom: 2px solid var(--color-accent);
+    transform: translateY(-70%) rotate(45deg);
     pointer-events: none;
+}
+
+.c-filter__select {
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: var(--space-xs) calc(var(--space-lg) + var(--space-xs)) var(--space-xs)
+        var(--space-sm);
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color var(--transition);
+}
+
+.c-filter__select:hover,
+.c-filter__select:focus {
+    border-color: var(--color-border-strong);
+    outline: none;
+}
+
+.c-filter__select option {
+    background: var(--color-panel);
+    color: var(--color-text);
+}
+
+/* Player status messages */
+.c-player__error {
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    color: var(--color-danger);
+    background: var(--color-danger-surface);
+}
+
+.c-player__loading {
+    padding: var(--space-xs) var(--space-sm);
+    font-size: 0.85rem;
+    color: var(--color-accent);
 }
