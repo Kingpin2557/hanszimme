@@ -25,25 +25,17 @@ function Home() {
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
 
-  // `iso`     = a country VIEW, entered by clicking a candle (zooms + chrome).
-  // `country` = the dropdown FILTER, which stays on the main world view.
+  // `iso` selects a country (dropdown or candle): it zooms the earth and filters
+  // the list, but the sidebar header keeps the "Hans Zimmer" brand title.
   const iso = params.get("iso")?.toLowerCase() ?? "";
-  const country = params.get("country")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
   const minRating = Number(params.get("minRating")) || 0;
-  const activeCountry = iso || country;
 
   // The loader returns a discriminated { type, data }: the full list on "/",
   // a single movie on "/:movieSlug". Derive both views from it.
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
-
-  // Country-view header title comes from `iso` only (candle click).
-  const countryName = iso
-    ? allMovies.find((m) => m.origin_country?.code.toLowerCase() === iso)
-        ?.origin_country.name
-    : undefined;
 
   // Base set: deduped + genre/rating (no country). Drives the country options.
   const baseList = allMovies.filter(
@@ -53,8 +45,8 @@ function Home() {
       (!minRating || m.rating.score >= minRating),
   );
 
-  // Sidebar list + markers are additionally narrowed to the active country.
-  const list = baseList.filter((m) => matchesCountry(m, activeCountry));
+  // Sidebar list + markers are additionally narrowed to the selected country.
+  const list = baseList.filter((m) => matchesCountry(m, iso));
 
   const markers = list.filter(
     (m, i, self) =>
@@ -79,7 +71,6 @@ function Home() {
   for (const m of allMovies) m.genres.forEach((g) => genreSet.add(g));
   const genres = [...genreSet].sort();
 
-  // Camera only flies for a country VIEW (candle); the dropdown keeps world view.
   useMapCamera(mapRef, iso, markers);
 
   return (
@@ -98,10 +89,9 @@ function Home() {
             latitude={m.origin_country.coords.lat}
             anchor="bottom"
             onClick={() => {
-              // Clicking a candle enters that country's VIEW (keep genre/rating).
+              // Clicking a candle selects its country (keeps genre/rating).
               const next = new URLSearchParams(params);
               next.set("iso", m.origin_country.code.toLowerCase());
-              next.delete("country");
               setParams(next);
             }}
           >
@@ -117,12 +107,7 @@ function Home() {
             toolbar={<Filters countries={countries} genres={genres} />}
           >
             <header className="o-header">
-              <SidebarHeader
-                movieSlug={movieSlug}
-                iso={iso}
-                countryName={countryName}
-                selectedMovie={selectedMovie}
-              />
+              <SidebarHeader movieSlug={movieSlug} selectedMovie={selectedMovie} />
             </header>
           </Sidebar>
         </section>
