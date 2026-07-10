@@ -613,7 +613,7 @@ html.is-playing .c-candle {
 /* Country filter dropdown (world view) */
 .c-filters {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: var(--space-sm);
     margin-block-end: var(--space-md);
 }
