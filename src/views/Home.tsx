@@ -18,7 +18,8 @@ const initialPos = {
   padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
 
-const RATING_STEPS = [4, 6, 8];
+// Ratings are bucketed to a whole number out of 10 for an exact-match filter.
+const roundRating = (score: number) => Math.round(score);
 
 type LoaderData = { type: "movies"; data: Movie[] } | DetailLoaderData;
 
@@ -31,7 +32,7 @@ function Home() {
   // the list, but the sidebar header keeps the "Hans Zimmer" brand title.
   const iso = params.get("iso")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
-  const minRating = Number(params.get("minRating")) || 0;
+  const rating = Number(params.get("rating")) || 0; // exact rating out of 10
 
   // The loader returns a discriminated { type, data }: the full list on "/",
   // a single movie on "/:movieSlug". Derive both views from it.
@@ -42,7 +43,8 @@ function Home() {
   // De-duplicate once; each filter is applied on top of this.
   const deduped = allMovies.filter((m, i, self) => isUnique(m, i, self));
   const matchesGenre = (m: Movie) => !genre || m.genres.includes(genre);
-  const matchesRating = (m: Movie) => !minRating || m.rating.score >= minRating;
+  const matchesRating = (m: Movie) =>
+    !rating || roundRating(m.rating.score) === rating;
 
   // Sidebar list + markers: all three filters applied.
   const list = deduped.filter(
@@ -75,12 +77,13 @@ function Home() {
   }
   const genres = [...genreSet].sort();
 
-  const ratingScope = deduped.filter(
-    (m) => matchesCountry(m, iso) && matchesGenre(m),
-  );
-  const ratings = RATING_STEPS.filter((t) =>
-    ratingScope.some((m) => m.rating.score >= t),
-  );
+  const ratingSet = new Set<number>();
+  for (const m of deduped) {
+    if (matchesCountry(m, iso) && matchesGenre(m)) {
+      ratingSet.add(roundRating(m.rating.score));
+    }
+  }
+  const ratings = [...ratingSet].sort((a, b) => a - b);
 
   // When a country has a single movie, auto-select its genre + rating; when
   // switching country, drop any filter that would leave it empty.
@@ -97,9 +100,9 @@ function Home() {
         next.set("genre", g);
         changed = true;
       }
-      const step = [...RATING_STEPS].reverse().find((t) => only.rating.score >= t);
-      if (step && minRating !== step) {
-        next.set("minRating", String(step));
+      const r = roundRating(only.rating.score);
+      if (rating !== r) {
+        next.set("rating", String(r));
         changed = true;
       }
     } else {
@@ -107,8 +110,8 @@ function Home() {
         next.delete("genre");
         changed = true;
       }
-      if (minRating && !inCountry.some((m) => m.rating.score >= minRating)) {
-        next.delete("minRating");
+      if (rating && !inCountry.some((m) => roundRating(m.rating.score) === rating)) {
+        next.delete("rating");
         changed = true;
       }
     }

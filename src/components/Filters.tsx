@@ -11,7 +11,7 @@ function Filters({ countries, genres, ratings }: FiltersProps) {
   const [params, setParams] = useSearchParams();
   const iso = params.get("iso")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
-  const minRating = params.get("minRating") ?? "";
+  const rating = params.get("rating") ?? "";
 
   // Merge one param into the current set (empty value clears it) so the filters
   // combine instead of overwriting each other.
@@ -48,14 +48,14 @@ function Filters({ countries, genres, ratings }: FiltersProps) {
       />
 
       <Dropdown
-        label="Minimum rating"
-        value={minRating}
-        onChange={(v) => setParam("minRating", v)}
+        label="Rating"
+        value={rating}
+        onChange={(v) => setParam("rating", v)}
         options={[
           { value: "", label: "Any rating" },
           ...ratings.map((t) => ({
             value: String(t),
-            label: `At least ${t} / 10`,
+            label: `${t} / 10`,
           })),
         ]}
       />
