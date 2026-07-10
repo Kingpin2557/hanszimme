@@ -13,8 +13,7 @@ function Filters({ countries, genres }: FiltersProps) {
   const genre = params.get("genre") ?? "";
   const minRating = params.get("minRating") ?? "";
 
-  // Merge one param into the current set (empty value clears it) so the filters
-  // combine instead of overwriting each other.
+  // Merge one param into the current set (empty value clears it).
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
@@ -22,23 +21,35 @@ function Filters({ countries, genres }: FiltersProps) {
     setParams(next);
   };
 
+  // Country selection is context-aware: in a country VIEW (iso, from a candle)
+  // it changes the viewed country; on the main view it's just a filter.
+  const setCountry = (value: string) => {
+    const next = new URLSearchParams(params);
+    if (iso) {
+      if (value) next.set("iso", value);
+      else next.delete("iso");
+      next.delete("country");
+    } else {
+      if (value) next.set("country", value);
+      else next.delete("country");
+    }
+    setParams(next);
+  };
+
   return (
     <div className="c-filters">
-      {/* Country: only on world view (a country isn't already selected). */}
-      {!iso && (
-        <Dropdown
-          label="Filter by country"
-          value={country}
-          onChange={(v) => setParam("country", v)}
-          options={[
-            { value: "", label: "All countries" },
-            ...countries.map((c) => ({
-              value: c.code.toLowerCase(),
-              label: c.name,
-            })),
-          ]}
-        />
-      )}
+      <Dropdown
+        label="Filter by country"
+        value={iso || country}
+        onChange={setCountry}
+        options={[
+          { value: "", label: "All countries" },
+          ...countries.map((c) => ({
+            value: c.code.toLowerCase(),
+            label: c.name,
+          })),
+        ]}
+      />
 
       <Dropdown
         label="Genre"
