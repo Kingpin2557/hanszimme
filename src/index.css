@@ -113,5 +113,6 @@ button:hover {
 }
 button:focus,
 button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
 }

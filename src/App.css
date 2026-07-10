@@ -194,7 +194,22 @@ header {
     width: fit-content;
 }
 
+/* Gentle fade+rise so navigating to a detail page (and the album loading in
+   afterwards) eases in instead of popping. */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .c-detail {
+    animation: fade-in 0.3s ease both;
+
     a {
         padding-block: var(--space-2xs);
         padding-inline: var(--space-xs);
@@ -330,6 +345,9 @@ header {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     background: var(--color-surface);
+
+    /* eases in when the tracks finish loading instead of snapping in */
+    animation: fade-in 0.35s ease both;
 }
 
 .c-player__album {
