@@ -68,6 +68,16 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
   useEffect(() => {
     return () => {
       stopLogging();
+      // Release every track's audio so nothing keeps buffering on the overview.
+      for (const el of audioRefs.current.values()) {
+        try {
+          el.pause();
+          el.removeAttribute("src");
+          el.load();
+        } catch (e) { void e; }
+      }
+      audioRefs.current.clear();
+      durationMap.current.clear();
       for (const source of sourceMap.current.values()) {
         try { source.disconnect(); } catch (e) { void e; }
       }
@@ -409,7 +419,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
         })}
       </ul>
 
-      {/* Hidden audio elements – one per track. preload="none" so we don't
+      {/* Hidden audio elements – one per track. preload="auto" so we don't
           transcode every track on mount; loading happens on first play. */}
       <div style={{ display: "none" }}>
         {tracks.map((track) => (
@@ -419,7 +429,7 @@ export default function SoundtrackPlayer({ movieId }: SoundtrackPlayerProps) {
             ref={(el) => {
               if (el) audioRefs.current.set(track.id, el);
             }}
-            preload="none"
+            preload="auto"
             src={`${API}/api/preview/${track.id}`}
             onDurationChange={(e) => handleDurationChange(track.id, e)}
             onTimeUpdate={(e) => handleTimeUpdate(track.id, e)}
