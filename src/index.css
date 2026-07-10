@@ -77,9 +77,6 @@
     --poster-height: 200px;
     --card-poster-height: 130px;
 
-    /* ---- Assets (swap for a local compressed .webp in /public later) ---- */
-    --sidebar-wallpaper: url("/wallpaper.webp");
-
     color-scheme: dark;
     color: var(--color-text);
     background-color: var(--color-bg);

@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { type Movie } from "../types";
 import { ArrowLeftIcon } from "./icons";
+import logoUrl from "../assets/logo.webp";
+import lampUrl from "../assets/lamp.webp";
 
 type SidebarHeaderProps = {
   movieSlug?: string;
@@ -31,7 +33,7 @@ function SidebarHeader({ movieSlug, selectedMovie }: SidebarHeaderProps) {
       <div className="o-brand">
         <img
           className="o-logo"
-          src="/logo.webp"
+          src={logoUrl}
           alt="Hans Zimmer logo"
           width={75}
           height={75}
@@ -40,7 +42,7 @@ function SidebarHeader({ movieSlug, selectedMovie }: SidebarHeaderProps) {
       </div>
       <img
         className="o-lamp"
-        src="/lamp.webp"
+        src={lampUrl}
         alt="Skull lantern"
         width={496}
         height={979}

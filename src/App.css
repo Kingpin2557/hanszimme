@@ -63,7 +63,7 @@ header {
     /* The panel is the site wallpaper itself; readable surfaces come from the
        cards/dropdowns layered on top. */
     background-color: var(--color-panel);
-    background-image: var(--sidebar-wallpaper);
+    background-image: url("./assets/wallpaper.webp");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
