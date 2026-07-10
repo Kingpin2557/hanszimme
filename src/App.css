@@ -611,12 +611,18 @@ html.is-playing .c-candle {
 }
 
 /* Country filter dropdown (world view) */
+.c-filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-block-end: var(--space-md);
+}
+
 .c-filter {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-2xs);
-    margin-block-end: var(--space-sm);
 }
 
 .c-filter__label {

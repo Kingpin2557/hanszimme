@@ -4,7 +4,7 @@ import Map, { Marker, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../hooks/useMapCamera";
 import SidebarHeader from "../components/SidebarHeader";
 import CandleMarker from "../components/CandleMarker";
-import CountryFilter from "../components/CountryFilter";
+import Filters from "../components/Filters";
 
 import { isUnique, matchesCountry } from "../script/utils/movieFiltes";
 import { type Movie } from "../types";
@@ -25,6 +25,8 @@ function Home() {
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
   const iso = params.get("iso")?.toLowerCase() ?? "";
+  const genre = params.get("genre") ?? "";
+  const minRating = Number(params.get("minRating")) || 0;
 
   // The loader returns a discriminated { type, data }: the full list on "/",
   // a single movie on "/:movieSlug". Derive both views from it.
@@ -38,10 +40,14 @@ function Home() {
         ?.origin_country.name
     : undefined;
 
-  // Poster / soundtrack validity is handled by the backend, so we only dedupe
-  // and apply the country filter here.
+  // Poster / soundtrack validity is handled by the backend; here we dedupe and
+  // apply the country / genre / rating filters.
   const list = allMovies.filter(
-    (m, i, self) => isUnique(m, i, self) && matchesCountry(m, iso),
+    (m, i, self) =>
+      isUnique(m, i, self) &&
+      matchesCountry(m, iso) &&
+      (!genre || m.genres.includes(genre)) &&
+      (!minRating || m.rating.score >= minRating),
   );
 
   const markers = list.filter(
@@ -50,17 +56,20 @@ function Home() {
       self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
 
-  // Unique countries for the filter dropdown (built without the global Map,
-  // which is shadowed by react-map-gl's <Map> import).
+  // Options for the filter dropdowns (built without the global Map, which is
+  // shadowed by react-map-gl's <Map> import).
   const countryNames: Record<string, string> = {};
+  const genreSet = new Set<string>();
   for (const m of allMovies) {
     if (m.origin_country) {
       countryNames[m.origin_country.code] = m.origin_country.name;
     }
+    m.genres.forEach((g) => genreSet.add(g));
   }
   const countries = Object.entries(countryNames)
     .map(([code, name]) => ({ code, name }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  const genres = [...genreSet].sort();
 
   useMapCamera(mapRef, iso, markers);
 
@@ -92,7 +101,7 @@ function Home() {
             slug={movieSlug}
             movie={selectedMovie}
             movies={list}
-            toolbar={iso ? undefined : <CountryFilter countries={countries} />}
+            toolbar={<Filters countries={countries} genres={genres} />}
           >
             <header className="o-header">
               <SidebarHeader
