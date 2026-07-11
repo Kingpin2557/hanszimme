@@ -38,6 +38,7 @@ type LoaderData =
 function Home() {
   const mapRef = useRef<MapRef>(null);
   const flyTimer = useRef<number | null>(null);
+  const [flyIndex, setFlyIndex] = useState<number | null>(null);
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
 
@@ -163,6 +164,7 @@ function Home() {
   }, [mode, selectedTour?.id]);
 
   useEffect(() => {
+    setFlyIndex(null);
     return () => {
       if (flyTimer.current) window.clearTimeout(flyTimer.current);
     };
@@ -175,7 +177,11 @@ function Home() {
     const stops = selectedTour.stops;
     let i = 0;
     const step = () => {
-      if (i >= stops.length) return;
+      if (i >= stops.length) {
+        setFlyIndex(null);
+        return;
+      }
+      setFlyIndex(i);
       const s = stops[i];
       map.flyTo({
         center: [s.coords.lng, s.coords.lat],
@@ -285,6 +291,8 @@ function Home() {
             >
               <div
                 className="c-stop"
+                data-current={i === flyIndex || undefined}
+                data-dim={(flyIndex !== null && i !== flyIndex) || undefined}
                 data-endpoint={
                   i === 0
                     ? "start"

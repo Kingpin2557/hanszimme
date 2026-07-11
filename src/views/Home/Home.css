@@ -53,3 +53,34 @@
     background-color: var(--color-accent-hover);
     color: var(--color-bg);
 }
+
+.c-stop {
+    transition:
+        opacity 0.6s ease,
+        transform var(--transition);
+}
+
+.c-stop .c-candle {
+    transition:
+        transform var(--transition),
+        filter var(--transition);
+}
+
+.c-stop[data-dim] {
+    opacity: 0.3;
+}
+
+.c-stop[data-current] {
+    z-index: 5;
+}
+
+.c-stop[data-current] .c-candle {
+    transform: scale(1.7);
+    filter: drop-shadow(0 0 16px var(--flame-glow));
+}
+
+.c-stop[data-current] .c-stop__no {
+    transform: scale(1.2);
+    background-color: var(--color-accent-hover);
+    color: var(--color-bg);
+}
