@@ -5,7 +5,7 @@ import { type Tour } from "../../types";
 import CountryFlag from "../CountryFlag/CountryFlag";
 
 type PlayerAlbum = { title: string; artist: string; artwork: string | null };
-type PlayerTrack = { id: number; title: string; durationMs: number | null };
+type PlayerTrack = { id: number; title: string; durationMs: number | null; previewUrl: string };
 
 type TourDetailProps = {
   tour: Tour;

@@ -22,6 +22,7 @@ export type PlayerTrack = {
   id: number;
   title: string;
   durationMs: number | null;
+  previewUrl: string;
 };
 
 export type DetailLoaderData = {
