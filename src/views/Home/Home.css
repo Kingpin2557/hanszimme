@@ -4,3 +4,52 @@
     width: 100vw;
     height: 100vh;
 }
+
+/* Toolbar: the mode switch sits on the same row as the filter dropdowns. */
+.c-toolbar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-sm);
+    margin-block-end: var(--space-md);
+}
+
+/* Numbered tour stop marker — makes stop order (and thus direction) clear. */
+.c-stop {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.c-stop__no {
+    position: absolute;
+    bottom: 100%;
+    margin-bottom: 3px;
+
+    min-width: 1.2rem;
+    padding: 0 0.25rem;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1.2rem;
+    text-align: center;
+
+    color: var(--color-text);
+    background-color: var(--color-accent);
+    border: 1px solid var(--color-bg);
+    border-radius: var(--radius-pill);
+}
+
+/* Highlight the first (start) and last (end) stops. */
+.c-stop[data-endpoint="start"] .c-stop__no::after {
+    content: " ·start";
+}
+.c-stop[data-endpoint="end"] .c-stop__no::after {
+    content: " ·end";
+}
+.c-stop[data-endpoint] .c-stop__no {
+    background-color: var(--color-accent-hover);
+    color: var(--color-bg);
+}

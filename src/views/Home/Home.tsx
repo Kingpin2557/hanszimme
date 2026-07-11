@@ -132,12 +132,12 @@ function Home() {
   useMapCamera(mapRef, focusKey, points);
 
   const toolbar = (
-    <>
+    <div className="c-toolbar">
       <ModeToggle />
       {mode === "movies" && (
         <Filters countries={countries} genres={genres} ratings={ratings} />
       )}
-    </>
+    </div>
   );
 
   return (
@@ -168,6 +168,24 @@ function Home() {
               type="line"
               layout={{ "line-cap": "round", "line-join": "round" }}
               paint={{ "line-color": "#a178bc", "line-width": 2.5, "line-opacity": 0.9 }}
+            />
+            {/* Repeating arrows along the line show the travel direction. */}
+            <Layer
+              id="tour-trail-arrows"
+              type="symbol"
+              layout={{
+                "symbol-placement": "line",
+                "symbol-spacing": 90,
+                "text-field": "▶",
+                "text-size": 13,
+                "text-keep-upright": false,
+                "text-allow-overlap": true,
+              }}
+              paint={{
+                "text-color": "#a178bc",
+                "text-halo-color": "#000000",
+                "text-halo-width": 1,
+              }}
             />
           </Source>
         )}
@@ -220,7 +238,19 @@ function Home() {
               latitude={s.coords.lat}
               anchor="bottom"
             >
-              <CandleMarker />
+              <div
+                className="c-stop"
+                data-endpoint={
+                  i === 0
+                    ? "start"
+                    : i === selectedTour.stops.length - 1
+                      ? "end"
+                      : undefined
+                }
+              >
+                <span className="c-stop__no">{i + 1}</span>
+                <CandleMarker />
+              </div>
             </Marker>
           ))}
 

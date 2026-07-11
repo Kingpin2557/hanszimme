@@ -2,6 +2,7 @@ import "./TourDetail.css";
 import { useEffect, useState } from "react";
 import SoundtrackPlayer from "../SoundtrackPlayer/SoundtrackPlayer";
 import { type Tour } from "../../types";
+import CountryFlag from "../CountryFlag/CountryFlag";
 
 type PlayerAlbum = { title: string; artist: string; artwork: string | null };
 type PlayerTrack = { id: number; title: string; durationMs: number | null };
@@ -37,6 +38,17 @@ export default function TourDetail({ tour }: { tour: Tour }) {
 
   return (
     <div className="c-detail c-tour-detail">
+      <div className="c-tour-detail__route">
+        <span className="c-tour-detail__place">
+          <CountryFlag code={tour.start.code} />
+          <span>{tour.start.country}</span>
+        </span>
+        <span className="c-tour-detail__arrow" aria-hidden="true">→</span>
+        <span className="c-tour-detail__place">
+          <CountryFlag code={last.code} />
+          <span>{last.country}</span>
+        </span>
+      </div>
       <p className="c-tour-detail__meta">
         {tour.years} · {tour.stopCount} stops · {tour.start.city} → {last.city}
       </p>

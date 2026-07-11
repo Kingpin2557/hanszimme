@@ -36,3 +36,33 @@
     font-size: 0.85rem;
     color: var(--color-text-muted);
 }
+
+/* Start → end country flags + names for a tour row. */
+.c-tour__route {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+    color: var(--color-text);
+}
+
+.c-tour__place {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+/* The CountryFlag <span> (first child) rendered at the movie flag size. */
+.c-tour__place > span:first-child {
+    width: var(--flag-width);
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
+    border-radius: var(--radius-xs);
+    background-size: cover;
+    background-position: center;
+}
+
+.c-tour__arrow {
+    color: var(--color-accent);
+    font-weight: 700;
+}

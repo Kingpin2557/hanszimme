@@ -43,3 +43,34 @@
     font-size: 0.8rem;
     color: var(--color-text-muted);
 }
+
+/* Start → end country flags + names, matching the movie detail flag placement. */
+.c-tour-detail__route {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding-inline: var(--space-lg);
+    margin-block-end: var(--space-xs);
+    color: var(--color-text);
+}
+
+.c-tour-detail__place {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.c-tour-detail__place > span:first-child {
+    width: var(--flag-width);
+    aspect-ratio: 16 / 9;
+    flex-shrink: 0;
+    border-radius: var(--radius-xs);
+    background-size: cover;
+    background-position: center;
+}
+
+.c-tour-detail__arrow {
+    color: var(--color-accent);
+    font-weight: 700;
+}
