@@ -1,6 +1,7 @@
+import "./SoundtrackPlayer.css";
 import { useEffect, useRef, useState } from "react";
-import { logAlbumGradient } from "../lib/sampleGradient";
-import { PlayIcon, PauseIcon } from "./icons";
+import { logAlbumGradient } from "../../lib/sampleGradient";
+import { PlayIcon, PauseIcon } from "../icons/icons";
 
 type Album = {
   title: string;

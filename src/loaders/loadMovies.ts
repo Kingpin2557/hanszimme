@@ -1,5 +1,5 @@
 import type { LoaderFunction } from "react-router";
-import { type Movie } from "../types";
+import { type Movie, type Tour } from "../types";
 
 type ApiMovie = {
   id: number;
@@ -62,12 +62,25 @@ const fetchMovies = async (path: string = "") => {
   return response.json();
 };
 
+// Tours come from setlist.fm via our API; degrade gracefully to [] if the tours
+// endpoint is unavailable (e.g. no SETLIST_API_KEY yet) so films still load.
+const fetchTours = async (): Promise<Tour[]> => {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_MOVIE_API}/api/tours`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.tours ?? []) as Tour[];
+  } catch {
+    return [];
+  }
+};
+
 export const movieLoader: LoaderFunction = async () => {
-  const data = await fetchMovies();
+  const [data, tours] = await Promise.all([fetchMovies(), fetchTours()]);
   const movies = (data.movies as ApiMovie[])
     .filter((m) => m.originCountry)
     .map(toMovie);
-  return { type: "movies" as "movies", data: movies };
+  return { type: "movies" as "movies", data: movies, tours };
 };
 
 export const movieDetailLoader: LoaderFunction = async ({ params }) => {

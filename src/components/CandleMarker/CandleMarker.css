@@ -1,0 +1,52 @@
+/* Candle map marker + flame flicker. */
+
+/* Candle map marker — a warm flame flickering over each country. */
+.c-candle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    filter: drop-shadow(0 0 6px var(--flame-glow));
+    transition:
+        transform var(--transition),
+        opacity 0.6s ease;
+}
+
+.c-candle:hover {
+    transform: scale(1.2);
+}
+
+.c-candle__flame {
+    width: var(--candle-flame-w);
+    height: var(--candle-flame-h);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    background: radial-gradient(
+        circle at 50% 72%,
+        var(--flame-core) 0%,
+        var(--flame-mid) 40%,
+        var(--flame-outer) 75%,
+        var(--flame-tip) 100%
+    );
+    transform-origin: 50% 100%;
+    animation: candle-flicker 1.5s ease-in-out infinite;
+}
+
+.c-candle__body {
+    width: var(--candle-body-w);
+    height: var(--candle-body-h);
+    margin-top: -1px;
+    border-radius: var(--radius-xs) var(--radius-xs) 1px 1px;
+    background: linear-gradient(var(--wax-top), var(--wax-bottom));
+}
+
+@keyframes candle-flicker {
+    0%,
+    100% {
+        transform: scaleY(1) rotate(-1.5deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scaleY(1.14) rotate(1.5deg);
+        opacity: 0.85;
+    }
+}

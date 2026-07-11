@@ -1,0 +1,8 @@
+/* Filter row (holds the country/genre/rating dropdowns). */
+
+.c-filters {
+    display: flex;
+    flex-direction: row;
+    gap: var(--space-sm);
+    margin-block-end: var(--space-md);
+}

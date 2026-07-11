@@ -1,0 +1,6 @@
+/* Home view: full-viewport map canvas. */
+
+.o-full {
+    width: 100vw;
+    height: 100vh;
+}

@@ -1,0 +1,117 @@
+/* Movie detail panel + description dialog. */
+
+.c-detail {
+    animation: fade-in 0.3s ease both;
+
+    a {
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-xs);
+    }
+}
+
+.c-detail__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+
+    padding-inline: var(--space-lg);
+    border-radius: var(--radius-md);
+
+    img {
+        height: var(--poster-height);
+        width: auto;
+        aspect-ratio: 2 / 3;
+        flex-shrink: 0;
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+    }
+
+    h2 {
+        color: var(--color-text);
+    }
+}
+
+.c-detail__description {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+/* Overview truncated to a few lines; click to open the full text in a dialog. */
+.c-detail__overview {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    line-height: 1.5em;
+    transition: color var(--transition);
+}
+
+/* Only interactive when the text is actually clamped. */
+.c-detail__overview[data-clickable] {
+    cursor: pointer;
+}
+
+.c-detail__overview[data-clickable]:hover {
+    color: var(--color-accent);
+}
+
+.c-dialog {
+    margin: auto;
+    max-width: 520px;
+    width: 90%;
+    padding: var(--space-lg);
+
+    color: var(--color-text);
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-panel);
+}
+
+.c-dialog::backdrop {
+    background: var(--color-backdrop);
+}
+
+.c-dialog__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.c-dialog__body p {
+    line-height: 1.6em;
+    overflow-wrap: break-word;
+}
+
+.c-dialog__close {
+    align-self: flex-end;
+}
+
+.c-detail__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+
+    color: var(--color-text-muted);
+
+    span {
+        display: inline-block;
+        width: var(--flag-width);
+        aspect-ratio: 16 / 9;
+        border-radius: var(--radius-xs);
+
+        background-size: cover;
+        background-position: center;
+    }
+}
+
+.c-detail__genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}

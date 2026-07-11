@@ -1,3 +1,5 @@
+/* App shell + globals: reset, sidebar frame, header, map, is-playing. */
+
 * {
     margin: 0;
     padding: 0;
@@ -21,6 +23,7 @@ main {
 
 html,
 body,
+
 #root {
     width: 100vw;
     margin: 0;
@@ -29,11 +32,6 @@ body,
 
 header {
     display: flex;
-}
-
-.o-full {
-    width: 100vw;
-    height: 100vh;
 }
 
 .o-flex {
@@ -70,82 +68,6 @@ header {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-panel);
-}
-
-.c-card {
-    position: relative;
-
-    display: flex;
-    align-items: center;
-    gap: var(--space-lg);
-
-    padding: var(--space-sm);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--color-border);
-    color: var(--color-text);
-    cursor: pointer;
-    /* The dimmed panel that used to sit on the sidebar now lives on each card,
-       so text stays readable over the wallpaper. Opaque (no see-through bg). */
-    background-color: var(--color-surface);
-    background-image:
-        radial-gradient(
-            130% 90% at 50% -20%,
-            hsla(276, 34%, 60%, 0.22),
-            transparent 60%
-        ),
-        linear-gradient(hsl(0, 0%, 15%), hsl(0, 0%, 10%));
-    transition:
-        border-color var(--transition),
-        background var(--transition),
-        box-shadow var(--transition);
-
-    span {
-        position: absolute;
-        top: var(--badge-inset);
-        right: var(--badge-inset);
-
-        width: var(--flag-width);
-        aspect-ratio: 16 / 9;
-        text-align: center;
-
-        color: var(--color-text);
-        padding: var(--space-xs);
-        border-radius: var(--radius-xs);
-
-        background-size: cover;
-        background-position: center;
-    }
-
-    img {
-        /* Match the detail-panel poster's width, just a touch taller. */
-        width: calc(var(--poster-height) * 2 / 3);
-        height: calc(var(--poster-height) + 10px);
-        object-fit: cover;
-        border-radius: var(--radius-sm);
-    }
-}
-
-/* Warm candle-glow on hover, echoing the map markers */
-.c-card:hover {
-    border-color: var(--color-border-strong);
-    background-color: var(--color-surface-hover);
-    box-shadow: 0 0 18px var(--accent-glow);
-}
-
-.c-card__info {
-    display: flex;
-    flex-direction: column;
-    align-content: flex-start;
-    gap: var(--space-sm);
-    width: 100%;
-    min-width: 0; /* let the text column shrink/wrap instead of overflowing */
-    /* keep text clear of the absolutely-positioned flag badge */
-    padding-right: calc(var(--flag-width) + var(--badge-inset));
-
-    a {
-        padding: 0;
-        width: max-content;
-    }
 }
 
 /* The only scroll region: the movie list, like the album's track list. */
@@ -197,42 +119,6 @@ header {
     flex-shrink: 0;
 }
 
-.c-card__description {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2xs);
-
-    p {
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        overflow-wrap: break-word; /* break long words instead of overflowing */
-        line-height: 1.5em;
-    }
-
-    /* Title: bold gold, capped at 2 lines */
-    p:first-child {
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
-        font-weight: bold;
-        font-size: 1.2rem;
-        color: var(--color-accent);
-    }
-
-    /* Overview: muted, capped at 3 lines */
-    p:last-child {
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
-        color: var(--color-text-muted);
-    }
-}
-.c-card__btn {
-    border-bottom: 1px solid var(--color-accent);
-    color: var(--color-accent);
-    width: fit-content;
-}
-
 /* Gentle fade+rise so navigating to a detail page (and the album loading in
    afterwards) eases in instead of popping. */
 @keyframes fade-in {
@@ -244,313 +130,6 @@ header {
         opacity: 1;
         transform: translateY(0);
     }
-}
-
-.c-detail {
-    animation: fade-in 0.3s ease both;
-
-    a {
-        padding-block: var(--space-2xs);
-        padding-inline: var(--space-xs);
-    }
-}
-
-.c-detail__header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-lg);
-
-    padding-inline: var(--space-lg);
-    border-radius: var(--radius-md);
-
-    img {
-        height: var(--poster-height);
-        width: auto;
-        aspect-ratio: 2 / 3;
-        flex-shrink: 0;
-        object-fit: cover;
-        border-radius: var(--radius-sm);
-    }
-
-    h2 {
-        color: var(--color-text);
-    }
-}
-
-.c-detail__description {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-}
-
-/* Overview truncated to a few lines; click to open the full text in a dialog. */
-.c-detail__overview {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    overflow-wrap: break-word;
-    line-height: 1.5em;
-    transition: color var(--transition);
-}
-
-/* Only interactive when the text is actually clamped. */
-.c-detail__overview[data-clickable] {
-    cursor: pointer;
-}
-
-.c-detail__overview[data-clickable]:hover {
-    color: var(--color-accent);
-}
-
-.c-dialog {
-    margin: auto;
-    max-width: 520px;
-    width: 90%;
-    padding: var(--space-lg);
-
-    color: var(--color-text);
-    background: var(--color-panel);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-panel);
-}
-
-.c-dialog::backdrop {
-    background: var(--color-backdrop);
-}
-
-.c-dialog__body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-}
-
-.c-dialog__body p {
-    line-height: 1.6em;
-    overflow-wrap: break-word;
-}
-
-.c-dialog__close {
-    align-self: flex-end;
-}
-
-.c-detail__meta {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: var(--space-sm);
-
-    color: var(--color-text-muted);
-
-    span {
-        display: inline-block;
-        width: var(--flag-width);
-        aspect-ratio: 16 / 9;
-        border-radius: var(--radius-xs);
-
-        background-size: cover;
-        background-position: center;
-    }
-}
-
-.c-detail__genres {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-}
-
-.c-pill {
-    padding: var(--space-2xs) var(--space-sm);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    background: var(--color-surface);
-    color: var(--color-accent);
-    font-size: 0.85rem;
-    white-space: nowrap;
-}
-
-/* Compact soundtrack "album embed" — artwork, track list, seek bar.
-   The audio analyser runs headless and logs FFT data to the console. */
-.c-player {
-    margin-top: var(--space-lg);
-    padding: var(--space-sm);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    background: var(--color-surface);
-
-    /* eases in when the tracks finish loading instead of snapping in */
-    animation: fade-in 0.35s ease both;
-}
-
-.c-player__album {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    min-width: 0;
-}
-
-.c-player__art {
-    width: 48px;
-    height: 48px;
-    flex-shrink: 0;
-    object-fit: cover;
-    border-radius: var(--radius-sm);
-}
-
-.c-player__album-info {
-    min-width: 0;
-}
-
-.c-player__album-title {
-    font-weight: bold;
-    color: var(--color-accent);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.c-player__album-artist {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.c-player__tracks {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-    max-height: 260px;
-    overflow-y: auto;
-}
-
-/* The active box wraps the whole row: track button + scrubber. */
-.c-player__tracks li[data-active] {
-    border: 1px solid var(--color-accent);
-    border-radius: var(--radius-md);
-    /* inset the content so the track's hover fill clears the rounded corners */
-    padding: var(--space-2xs);
-}
-
-.c-player__track {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    width: 100%;
-
-    padding: var(--space-xs) var(--space-xs);
-    border: none;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--color-text);
-    font-size: 0.85rem;
-    text-align: left;
-    cursor: pointer;
-    transition: background var(--transition);
-}
-
-.c-player__track:hover {
-    background: var(--color-surface-hover);
-    color: var(--color-text);
-    border-color: transparent;
-}
-
-.c-player__track[data-active] {
-    color: var(--color-accent);
-}
-
-/* One clean box only: drop the default focus ring, keep a subtle keyboard one. */
-.c-player__track:focus {
-    outline: none;
-}
-
-.c-player__track:focus-visible {
-    outline: 2px solid var(--color-border-strong);
-    outline-offset: -2px;
-}
-
-.c-player__icon {
-    flex-shrink: 0;
-    display: inline-flex;
-    width: 1.1em;
-}
-
-.c-player__icon svg {
-    width: 1.1em;
-    height: 1.1em;
-}
-
-.c-player__track-title {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.c-player__time {
-    flex-shrink: 0;
-    color: var(--color-text-muted);
-    font-variant-numeric: tabular-nums;
-}
-
-/* Per-track scrubber: elapsed | seek bar | total, shown only while playing.
-   Indented so the bar lines up under the title, past the play icon. */
-.c-player__scrubber {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    margin-top: var(--space-xs);
-    padding: 0 var(--space-xs) var(--space-2xs)
-        calc(var(--space-xs) + 1.1em + var(--space-xs));
-}
-
-.c-player__scrubber .c-player__time {
-    min-width: 3.4ch;
-}
-
-.c-player__scrubber .c-player__time:last-child {
-    text-align: right;
-}
-
-.c-player__seek {
-    position: relative;
-    flex: 1;
-    height: 4px;
-    border-radius: var(--radius-pill);
-    background: var(--color-border);
-    cursor: pointer;
-}
-
-.c-player__seek-fill {
-    position: relative;
-    height: 100%;
-    border-radius: var(--radius-pill);
-    background: var(--color-accent);
-    transition: width 0.1s linear;
-}
-
-/* Rounded knob at the end of the fill for a finished look. */
-.c-player__seek-fill::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: 0;
-    transform: translate(50%, -50%);
-    width: 10px;
-    height: 10px;
-    border-radius: var(--radius-pill);
-    background: var(--color-accent);
-    box-shadow: 0 0 6px var(--accent-glow);
 }
 
 /* Loader-error fallback screen */
@@ -570,57 +149,6 @@ header {
 .mapboxgl-ctrl-bottom-right,
 .mapboxgl-ctrl-bottom-left {
     display: none !important;
-}
-
-/* Candle map marker — a warm flame flickering over each country. */
-.c-candle {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    filter: drop-shadow(0 0 6px var(--flame-glow));
-    transition:
-        transform var(--transition),
-        opacity 0.6s ease;
-}
-
-.c-candle:hover {
-    transform: scale(1.2);
-}
-
-.c-candle__flame {
-    width: var(--candle-flame-w);
-    height: var(--candle-flame-h);
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    background: radial-gradient(
-        circle at 50% 72%,
-        var(--flame-core) 0%,
-        var(--flame-mid) 40%,
-        var(--flame-outer) 75%,
-        var(--flame-tip) 100%
-    );
-    transform-origin: 50% 100%;
-    animation: candle-flicker 1.5s ease-in-out infinite;
-}
-
-.c-candle__body {
-    width: var(--candle-body-w);
-    height: var(--candle-body-h);
-    margin-top: -1px;
-    border-radius: var(--radius-xs) var(--radius-xs) 1px 1px;
-    background: linear-gradient(var(--wax-top), var(--wax-bottom));
-}
-
-@keyframes candle-flicker {
-    0%,
-    100% {
-        transform: scaleY(1) rotate(-1.5deg);
-        opacity: 1;
-    }
-    50% {
-        transform: scaleY(1.14) rotate(1.5deg);
-        opacity: 0.85;
-    }
 }
 
 /* ============================================================
@@ -644,6 +172,7 @@ html.is-playing body {
    Niagara visualizer shows through; they fade back in when playback pauses. */
 html.is-playing .mapboxgl-canvas,
 html.is-playing .mapboxgl-marker,
+
 html.is-playing .c-candle {
     opacity: 0;
     pointer-events: none;
@@ -662,124 +191,8 @@ html.is-playing .c-candle {
     filter: drop-shadow(0 0 16px hsla(276, 34%, 60%, 0.4));
 }
 
-/* Country filter dropdown (world view) */
-.c-filters {
-    display: flex;
-    flex-direction: row;
-    gap: var(--space-sm);
-    margin-block-end: var(--space-md);
-}
-
-.c-filter {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-2xs);
-}
-
-.c-filter__label {
-    font-family: var(--font-display);
-    font-size: 0.7rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+/* Utility: muted empty/placeholder note (reusable). */
+.u-empty {
+    padding: var(--space-md) 0;
     color: var(--color-text-muted);
-}
-
-.c-filter__field {
-    position: relative;
-    width: fit-content;
-}
-
-/* custom gold chevron */
-.c-filter__field::after {
-    content: "";
-    position: absolute;
-    right: var(--space-sm);
-    top: 50%;
-    width: 0.5em;
-    height: 0.5em;
-    border-right: 2px solid var(--color-accent);
-    border-bottom: 2px solid var(--color-accent);
-    transform: translateY(-70%) rotate(45deg);
-    pointer-events: none;
-}
-
-.c-filter__button {
-    width: 100%;
-    min-width: 180px;
-    text-align: left;
-    appearance: none;
-    -webkit-appearance: none;
-    padding: var(--space-xs) calc(var(--space-lg) + var(--space-xs)) var(--space-xs)
-        var(--space-sm);
-
-    font-family: var(--font-body);
-    font-size: 0.95rem;
-    color: var(--color-text);
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-pill);
-    cursor: pointer;
-    transition:
-        border-color var(--transition),
-        box-shadow var(--transition),
-        background-color var(--transition);
-}
-
-.c-filter__button:hover {
-    border-color: var(--color-border-strong);
-    background-color: var(--color-surface-hover);
-}
-
-.c-filter__button:focus,
-.c-filter__button:focus-visible {
-    outline: none;
-    border-color: var(--color-border-strong);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-/* Chevron points up while the menu is open. */
-.c-filter__field[data-open]::after {
-    transform: translateY(-30%) rotate(-135deg);
-}
-
-/* DOM-rendered option list (no native popup, so it is safe in UE's CEF). */
-.c-filter__menu {
-    position: absolute;
-    top: calc(100% + var(--space-2xs));
-    left: 0;
-    right: 0;
-    z-index: 10;
-
-    margin: 0;
-    padding: var(--space-2xs);
-    list-style: none;
-
-    max-height: 240px;
-    overflow-y: auto;
-
-    background-color: var(--color-panel);
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-panel);
-}
-
-.c-filter__option {
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--radius-sm);
-    color: var(--color-text);
-    cursor: pointer;
-    white-space: nowrap;
-    transition:
-        background-color var(--transition),
-        color var(--transition);
-}
-
-.c-filter__option:hover {
-    background-color: var(--color-surface-hover);
-}
-
-.c-filter__option[data-active] {
-    color: var(--color-accent);
-    background-color: var(--color-surface);
 }

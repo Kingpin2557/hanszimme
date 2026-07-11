@@ -1,0 +1,182 @@
+/* Compact album/soundtrack player. */
+
+.c-player__album {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    min-width: 0;
+}
+
+.c-player__art {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+}
+
+.c-player__album-info {
+    min-width: 0;
+}
+
+.c-player__album-title {
+    font-weight: bold;
+    color: var(--color-accent);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.c-player__album-artist {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.c-player__tracks {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+/* The active box wraps the whole row: track button + scrubber. */
+.c-player__tracks li[data-active] {
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    /* inset the content so the track's hover fill clears the rounded corners */
+    padding: var(--space-2xs);
+}
+
+.c-player__track {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 100%;
+
+    padding: var(--space-xs) var(--space-xs);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.c-player__track:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text);
+    border-color: transparent;
+}
+
+.c-player__track[data-active] {
+    color: var(--color-accent);
+}
+
+/* One clean box only: drop the default focus ring, keep a subtle keyboard one. */
+.c-player__track:focus {
+    outline: none;
+}
+
+.c-player__track:focus-visible {
+    outline: 2px solid var(--color-border-strong);
+    outline-offset: -2px;
+}
+
+.c-player__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    width: 1.1em;
+}
+
+.c-player__icon svg {
+    width: 1.1em;
+    height: 1.1em;
+}
+
+.c-player__track-title {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.c-player__time {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.c-player__scrubber .c-player__time {
+    min-width: 3.4ch;
+}
+
+.c-player__scrubber .c-player__time:last-child {
+    text-align: right;
+}
+
+.c-player__seek {
+    position: relative;
+    flex: 1;
+    height: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--color-border);
+    cursor: pointer;
+}
+
+.c-player__seek-fill {
+    position: relative;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    transition: width 0.1s linear;
+}
+
+/* Rounded knob at the end of the fill for a finished look. */
+.c-player__seek-fill::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translate(50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-pill);
+    background: var(--color-accent);
+    box-shadow: 0 0 6px var(--accent-glow);
+}
+
+/* Compact soundtrack "album embed" — artwork, track list, seek bar.
+   The audio analyser runs headless and logs FFT data to the console. */
+.c-player {
+    margin-top: var(--space-lg);
+    padding: var(--space-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+
+    /* eases in when the tracks finish loading instead of snapping in */
+    animation: fade-in 0.35s ease both;
+}
+
+/* Per-track scrubber: elapsed | seek bar | total, shown only while playing.
+   Indented so the bar lines up under the title, past the play icon. */
+.c-player__scrubber {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-xs);
+    padding: 0 var(--space-xs) var(--space-2xs)
+        calc(var(--space-xs) + 1.1em + var(--space-xs));
+}

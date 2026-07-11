@@ -1,0 +1,11 @@
+/* Genre pill. */
+
+.c-pill {
+    padding: var(--space-2xs) var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-surface);
+    color: var(--color-accent);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}

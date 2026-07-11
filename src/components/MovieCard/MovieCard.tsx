@@ -1,5 +1,6 @@
-import CountryFlag from "./CountryFlag";
-import { type Movie } from "../types";
+import "./MovieCard.css";
+import CountryFlag from "../CountryFlag/CountryFlag";
+import { type Movie } from "../../types";
 
 interface MovieCardProps {
   movie: Movie;

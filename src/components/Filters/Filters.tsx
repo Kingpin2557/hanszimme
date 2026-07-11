@@ -1,5 +1,5 @@
 import { useSearchParams } from "react-router-dom";
-import Dropdown from "./Dropdown";
+import Dropdown from "../Dropdown/Dropdown";
 
 type FiltersProps = {
   countries: { code: string; name: string }[];
@@ -13,12 +13,25 @@ function Filters({ countries, genres, ratings }: FiltersProps) {
   const genre = params.get("genre") ?? "";
   const rating = params.get("rating") ?? "";
 
-  // Merge one param into the current set (empty value clears it) so the filters
-  // combine instead of overwriting each other.
+  // Merge one param into the current set (empty clears it) so filters combine.
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
     else next.delete(key);
+    setParams(next);
+  };
+
+  // Clearing the country resets genre + rating back to "All", so an empty
+  // selection always shows the default options rather than stale filters.
+  const setCountry = (value: string) => {
+    const next = new URLSearchParams(params);
+    if (value) {
+      next.set("iso", value);
+    } else {
+      next.delete("iso");
+      next.delete("genre");
+      next.delete("rating");
+    }
     setParams(next);
   };
 
@@ -27,13 +40,10 @@ function Filters({ countries, genres, ratings }: FiltersProps) {
       <Dropdown
         label="Filter by country"
         value={iso}
-        onChange={(v) => setParam("iso", v)}
+        onChange={setCountry}
         options={[
           { value: "", label: "All countries" },
-          ...countries.map((c) => ({
-            value: c.code.toLowerCase(),
-            label: c.name,
-          })),
+          ...countries.map((c) => ({ value: c.code.toLowerCase(), label: c.name })),
         ]}
       />
 
@@ -53,10 +63,7 @@ function Filters({ countries, genres, ratings }: FiltersProps) {
         onChange={(v) => setParam("rating", v)}
         options={[
           { value: "", label: "Any rating" },
-          ...ratings.map((t) => ({
-            value: String(t),
-            label: `${t} / 10`,
-          })),
+          ...ratings.map((t) => ({ value: String(t), label: `${t} / 10` })),
         ]}
       />
     </div>

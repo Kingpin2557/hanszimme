@@ -1,0 +1,38 @@
+/* Films / Tours segmented toggle (sits above the filters). */
+.c-mode {
+    display: inline-flex;
+    gap: var(--space-2xs);
+    padding: var(--space-2xs);
+    margin-block-end: var(--space-md);
+
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+}
+
+.c-mode__btn {
+    padding: var(--space-2xs) var(--space-md);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: transparent;
+
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition:
+        color var(--transition),
+        background-color var(--transition);
+}
+
+.c-mode__btn:hover {
+    color: var(--color-text);
+    border-color: transparent;
+}
+
+.c-mode__btn[data-active] {
+    color: var(--color-text);
+    background-color: var(--color-accent);
+}

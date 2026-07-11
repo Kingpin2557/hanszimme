@@ -37,6 +37,10 @@
 
     /* ---- Glows / effects (alpha ok — these are shadows, not fills) ---- */
     --accent-glow: hsla(276, 34%, 60%, 0.45);
+    /* Opaque dark panel with a purple top-glow — shared by cards + tour rows. */
+    --surface-gradient:
+        radial-gradient(130% 90% at 50% -20%, hsla(276, 34%, 60%, 0.22), transparent 60%),
+        linear-gradient(hsl(0, 0%, 15%), hsl(0, 0%, 10%));
     --shadow-panel: 0 20px 60px hsla(0, 0%, 0%, 0.6);
     --transition: 0.2s ease;
 

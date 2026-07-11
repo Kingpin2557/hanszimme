@@ -1,0 +1,108 @@
+/* Movie list card (sidebar). */
+
+.c-card {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+
+    padding: var(--space-sm);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    cursor: pointer;
+    /* The dimmed panel that used to sit on the sidebar now lives on each card,
+       so text stays readable over the wallpaper. Opaque (no see-through bg). */
+    background-color: var(--color-surface);
+    background-image: var(--surface-gradient);
+    transition:
+        border-color var(--transition),
+        background var(--transition),
+        box-shadow var(--transition);
+
+    span {
+        position: absolute;
+        top: var(--badge-inset);
+        right: var(--badge-inset);
+
+        width: var(--flag-width);
+        aspect-ratio: 16 / 9;
+        text-align: center;
+
+        color: var(--color-text);
+        padding: var(--space-xs);
+        border-radius: var(--radius-xs);
+
+        background-size: cover;
+        background-position: center;
+    }
+
+    img {
+        /* Match the detail-panel poster's width, just a touch taller. */
+        width: calc(var(--poster-height) * 2 / 3);
+        height: calc(var(--poster-height) + 10px);
+        object-fit: cover;
+        border-radius: var(--radius-sm);
+    }
+}
+
+/* Warm candle-glow on hover, echoing the map markers */
+.c-card:hover {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface-hover);
+    box-shadow: 0 0 18px var(--accent-glow);
+}
+
+.c-card__info {
+    display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+    gap: var(--space-sm);
+    width: 100%;
+    min-width: 0; /* let the text column shrink/wrap instead of overflowing */
+    /* keep text clear of the absolutely-positioned flag badge */
+    padding-right: calc(var(--flag-width) + var(--badge-inset));
+
+    a {
+        padding: 0;
+        width: max-content;
+    }
+}
+
+.c-card__description {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+
+    p {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        overflow-wrap: break-word; /* break long words instead of overflowing */
+        line-height: 1.5em;
+    }
+
+    /* Title: bold gold, capped at 2 lines */
+    p:first-child {
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: var(--color-accent);
+    }
+
+    /* Overview: muted, capped at 3 lines */
+    p:last-child {
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        color: var(--color-text-muted);
+    }
+}
+
+.c-card__btn {
+    border-bottom: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    width: fit-content;
+}

@@ -1,10 +1,11 @@
+import "./Detail.css";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
-import { type Movie } from "../types";
-import { type DetailLoaderData } from "../loaders/loadMovies";
-import CountryFlag from "./CountryFlag";
-import Pill from "./Pill";
-import SoundtrackPlayer from "./SoundtrackPlayer";
+import { type Movie } from "../../types";
+import { type DetailLoaderData } from "../../loaders/loadMovies";
+import CountryFlag from "../CountryFlag/CountryFlag";
+import Pill from "../Pill/Pill";
+import SoundtrackPlayer from "../SoundtrackPlayer/SoundtrackPlayer";
 
 interface DetailProps {
   movie: Movie;

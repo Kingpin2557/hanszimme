@@ -1,49 +1,48 @@
 import { useEffect, type RefObject } from "react";
 import { type MapRef } from "react-map-gl/mapbox";
-import { type Movie } from "../types";
 
-const initialPos = {
-  longitude: 3.72,
-  latitude: 51.05,
-  zoom: 2,
-};
+const initialPos = { longitude: 3.72, latitude: 51.05, zoom: 2 };
 
+type Point = { lng: number; lat: number };
+
+/**
+ * Frame the globe around a set of points (country markers, tour starts, or a
+ * tour's stops). `focusKey` is the only dependency, so the camera only re-flies
+ * when the selection actually changes — not on every render.
+ */
 export function useMapCamera(
   mapRef: RefObject<MapRef | null>,
-  iso: string,
-  markers: Movie[],
+  focusKey: string,
+  points: Point[],
 ) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    if (!iso) {
+    if (points.length === 0) {
+      map.flyTo({ center: [initialPos.longitude, initialPos.latitude], zoom: initialPos.zoom });
+      return;
+    }
+
+    if (points.length === 1) {
       map.flyTo({
-        center: [initialPos.longitude, initialPos.latitude],
-        zoom: initialPos.zoom,
-      });
-    } else if (markers.length === 1) {
-      const { lng, lat } = markers[0].origin_country.coords;
-      // Offset for the sidebar so the marker stays in front, not hidden behind it.
-      map.flyTo({
-        center: [lng, lat],
+        center: [points[0].lng, points[0].lat],
         zoom: 5,
         padding: { top: 0, bottom: 0, left: 0, right: 700 },
         duration: 1500,
       });
-    } else if (markers.length > 1) {
-      const lngs = markers.map((m) => m.origin_country.coords.lng);
-      const lats = markers.map((m) => m.origin_country.coords.lat);
-      map.fitBounds(
-        [
-          [Math.min(...lngs), Math.min(...lats)],
-          [Math.max(...lngs), Math.max(...lats)],
-        ],
-        {
-          padding: { top: 50, bottom: 50, left: 50, right: 650 },
-          duration: 1500,
-        },
-      );
+      return;
     }
-  }, [iso, markers, mapRef]);
+
+    const lngs = points.map((p) => p.lng);
+    const lats = points.map((p) => p.lat);
+    map.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: { top: 60, bottom: 60, left: 60, right: 650 }, duration: 1500 },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey]);
 }

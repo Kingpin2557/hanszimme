@@ -1,3 +1,4 @@
+import "./CandleMarker.css";
 // A small candle used in place of the default Mapbox pin: a wax body with a
 // flickering flame (animation lives in App.css).
 function CandleMarker() {

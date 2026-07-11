@@ -1,0 +1,117 @@
+/* Filter dropdowns (country / genre / rating) + filter row. */
+
+/* Country filter dropdown (world view) */
+
+.c-filter {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2xs);
+}
+
+.c-filter__label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.c-filter__field {
+    position: relative;
+    width: fit-content;
+}
+
+/* custom gold chevron */
+.c-filter__field::after {
+    content: "";
+    position: absolute;
+    right: var(--space-sm);
+    top: 50%;
+    width: 0.5em;
+    height: 0.5em;
+    border-right: 2px solid var(--color-accent);
+    border-bottom: 2px solid var(--color-accent);
+    transform: translateY(-70%) rotate(45deg);
+    pointer-events: none;
+}
+
+.c-filter__button {
+    width: 100%;
+    min-width: 180px;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: var(--space-xs) calc(var(--space-lg) + var(--space-xs)) var(--space-xs)
+        var(--space-sm);
+
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--color-text);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    transition:
+        border-color var(--transition),
+        box-shadow var(--transition),
+        background-color var(--transition);
+}
+
+.c-filter__button:hover {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface-hover);
+}
+
+.c-filter__button:focus,
+.c-filter__button:focus-visible {
+    outline: none;
+    border-color: var(--color-border-strong);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Chevron points up while the menu is open. */
+.c-filter__field[data-open]::after {
+    transform: translateY(-30%) rotate(-135deg);
+}
+
+/* DOM-rendered option list (no native popup, so it is safe in UE's CEF). */
+.c-filter__menu {
+    position: absolute;
+    top: calc(100% + var(--space-2xs));
+    left: 0;
+    right: 0;
+    z-index: 10;
+
+    margin: 0;
+    padding: var(--space-2xs);
+    list-style: none;
+
+    max-height: 240px;
+    overflow-y: auto;
+
+    background-color: var(--color-panel);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-panel);
+}
+
+.c-filter__option {
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    color: var(--color-text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+        background-color var(--transition),
+        color var(--transition);
+}
+
+.c-filter__option:hover {
+    background-color: var(--color-surface-hover);
+}
+
+.c-filter__option[data-active] {
+    color: var(--color-accent);
+    background-color: var(--color-surface);
+}
