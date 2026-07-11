@@ -1,6 +1,5 @@
 import "./SoundtrackPlayer.css";
 import { useEffect, useRef, useState } from "react";
-import { logAlbumGradient } from "../../lib/sampleGradient";
 import { PlayIcon, PauseIcon } from "../icons/icons";
 
 type Album = {
@@ -28,9 +27,10 @@ function formatTime(seconds: number): string {
 interface SoundtrackPlayerProps {
   album: Album | null;
   tracks: Track[];
+  gradient?: string[];
 }
 
-export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProps) {
+export default function SoundtrackPlayer({ album, tracks, gradient }: SoundtrackPlayerProps) {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -60,6 +60,20 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     document.documentElement.classList.toggle("is-playing", isPlaying);
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
+
+  useEffect(() => {
+    if (!gradient || gradient.length === 0) return;
+    const post = () => {
+      fetch(`${API}/api/current`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gradient }),
+      }).catch(() => {});
+    };
+    post();
+    const id = window.setInterval(post, 5000);
+    return () => window.clearInterval(id);
+  }, [gradient]);
 
   useEffect(() => {
     if (currentId == null) return;
@@ -242,7 +256,7 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
       const idx = tracks.findIndex((t) => t.id === track.id);
       if (idx !== -1) currentTrackIndexRef.current = idx;
 
-      if (album?.artwork) logAlbumGradient(album.artwork);
+      if (gradient && gradient.length) console.log(`HZGRAD|${gradient.join(",")}`);
       setTimeout(() => startLogging(), 200);
     } catch (err) {
       console.error("[Audio] Playback error:", err);

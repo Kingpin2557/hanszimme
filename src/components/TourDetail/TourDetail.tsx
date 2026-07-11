@@ -19,6 +19,7 @@ export default function TourDetail({ tour, onFlyThrough }: TourDetailProps) {
       : null,
   );
   const [tracks, setTracks] = useState<PlayerTrack[]>([]);
+  const [gradient, setGradient] = useState<string[]>([]);
 
   useEffect(() => {
     const albumId = tour.album?.id;
@@ -30,6 +31,7 @@ export default function TourDetail({ tour, onFlyThrough }: TourDetailProps) {
         if (!active || !d) return;
         if (d.album) setAlbum({ title: d.album.title, artist: d.album.artist, artwork: d.album.artwork });
         setTracks((d.tracks ?? []) as PlayerTrack[]);
+        setGradient((d.gradient ?? []) as string[]);
       })
       .catch(() => {});
     return () => {
@@ -62,7 +64,7 @@ export default function TourDetail({ tour, onFlyThrough }: TourDetailProps) {
         </button>
       )}
 
-      {album && <SoundtrackPlayer album={album} tracks={tracks} />}
+      {album && <SoundtrackPlayer album={album} tracks={tracks} gradient={gradient} />}
     </div>
   );
 }

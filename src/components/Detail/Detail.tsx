@@ -13,7 +13,7 @@ interface DetailProps {
 
 function Detail({ movie }: DetailProps) {
 
-  const { album, tracks } = useLoaderData() as DetailLoaderData;
+  const { album, tracks, gradient } = useLoaderData() as DetailLoaderData;
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const overviewRef = useRef<HTMLParagraphElement>(null);
@@ -69,7 +69,7 @@ function Detail({ movie }: DetailProps) {
         </div>
       </div>
 
-      <SoundtrackPlayer album={album} tracks={tracks} />
+      <SoundtrackPlayer album={album} tracks={tracks} gradient={gradient} />
 
       {isTruncated && (
         <dialog

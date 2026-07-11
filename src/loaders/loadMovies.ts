@@ -29,6 +29,7 @@ export type DetailLoaderData = {
   data: Movie;
   album: PlayerAlbum | null;
   tracks: PlayerTrack[];
+  gradient: string[];
 };
 
 const toMovie = (m: ApiMovie): Movie => ({
@@ -98,5 +99,6 @@ export const movieDetailLoader: LoaderFunction = async ({ params }) => {
     data: toMovie(movie as ApiMovie),
     album: (soundtrack?.album ?? null) as PlayerAlbum | null,
     tracks: (soundtrack?.tracks ?? []) as PlayerTrack[],
+    gradient: (soundtrack?.gradient ?? []) as string[],
   };
 };
