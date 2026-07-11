@@ -1,3 +1,4 @@
+import "./Filters.css"
 import { useSearchParams } from "react-router-dom";
 import Dropdown from "../Dropdown/Dropdown";
 
