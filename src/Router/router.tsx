@@ -5,8 +5,6 @@ import { movieLoader, movieDetailLoader } from "../loaders/loadMovies";
 import { ROUTES } from "./routes";
 import AppLoader from "../components/AppLoader/AppLoader";
 
-// Shown when a loader throws (e.g. the API can't find the slug) instead of
-// React Router's default full-screen crash.
 function RouteError() {
   const error = useRouteError() as Error;
   return (
@@ -27,7 +25,7 @@ export const router = createBrowserRouter([
     hydrateFallbackElement: <AppLoader />,
   },
   {
-    // The slug stays in the URL; the loader fetches the movie by that slug.
+
     path: ROUTES.MOVIE,
     element: <Home />,
     loader: movieDetailLoader,

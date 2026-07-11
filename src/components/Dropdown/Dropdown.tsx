@@ -1,9 +1,6 @@
 import "./Dropdown.css";
 import { useEffect, useRef, useState } from "react";
 
-// Custom DOM-only dropdown. A native <select> opens an OS-level popup window,
-// which UE5's off-screen CEF browser can't create and crashes on — so the option
-// list is rendered as plain DOM instead. Same props as the old select version.
 export type Option = { value: string; label: string };
 
 type DropdownProps = {
@@ -19,19 +16,18 @@ function Dropdown({ label, value, options, onChange }: DropdownProps) {
 
   const selected = options.find((o) => o.value === value) ?? options[0];
 
-  // Close when clicking outside the control or pressing Escape.
   useEffect(() => {
     if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
+    const onMouseDown = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);

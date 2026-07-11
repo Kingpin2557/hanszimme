@@ -1,11 +1,8 @@
-/* Home view: full-viewport map canvas. */
-
 .o-full {
     width: 100vw;
     height: 100vh;
 }
 
-/* Toolbar: the mode switch sits on the same row as the filter dropdowns. */
 .c-toolbar {
     display: flex;
     flex-direction: row;
@@ -15,7 +12,6 @@
     margin-block-end: var(--space-md);
 }
 
-/* Numbered tour stop marker — makes stop order (and thus direction) clear. */
 .c-stop {
     position: relative;
     display: flex;
@@ -42,14 +38,13 @@
     border-radius: var(--radius-pill);
 }
 
-/* Highlight the first (start) and last (end) stops. */
 .c-stop[data-endpoint="start"] .c-stop__no::after {
     content: " start";
 }
 .c-stop[data-endpoint="end"] .c-stop__no::after {
     content: " end";
 }
-/* Start = green, end = light purple, so the two ends of the trail stand out. */
+
 .c-stop[data-endpoint="start"] .c-stop__no {
     background-color: var(--color-start);
     color: var(--color-bg);

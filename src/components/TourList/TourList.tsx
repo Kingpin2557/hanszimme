@@ -3,8 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { type Tour } from "../../types";
 import CountryFlag from "../CountryFlag/CountryFlag";
 
-// Tours overview list (tours mode, nothing selected). Selecting a tour is a
-// navigation, so the header Back button returns here.
 export default function TourList({ tours }: { tours: Tour[] }) {
   const [params, setParams] = useSearchParams();
 

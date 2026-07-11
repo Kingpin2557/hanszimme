@@ -1,5 +1,3 @@
-/* App shell + globals: reset, sidebar frame, header, map, is-playing. */
-
 * {
     margin: 0;
     padding: 0;
@@ -40,9 +38,6 @@ header {
     gap: var(--space-sm);
 }
 
-/* Dark panel using the site's wallpaper texture, dimmed for readability with a
-   purple vignette glow on top (hans-zimmer.com). Swap the URL for a local
-   compressed .webp in /public when you have one. */
 .o-sidebar {
     position: absolute;
     top: 50%;
@@ -52,14 +47,13 @@ header {
     width: var(--sidebar-width);
     max-height: 90vh;
     padding: var(--sidebar-padding);
-    /* The panel itself never scrolls; the movie list scrolls internally. */
+
     display: flex;
     flex-direction: column;
     overflow: hidden;
 
     color: var(--color-text);
-    /* The panel is the site wallpaper itself; readable surfaces come from the
-       cards/dropdowns layered on top. */
+
     background-color: var(--color-panel);
     background-image: url("./assets/wallpaper.webp");
     background-size: cover;
@@ -70,7 +64,6 @@ header {
     box-shadow: var(--shadow-panel);
 }
 
-/* The only scroll region: the movie list, like the album's track list. */
 .o-scroll {
     flex: 1 1 auto;
     min-height: 0;
@@ -101,7 +94,6 @@ header {
     }
 }
 
-/* Brand: site logo + title (logo hides itself if /logo.webp is missing). */
 .o-brand {
     display: flex;
     align-items: center;
@@ -119,8 +111,6 @@ header {
     flex-shrink: 0;
 }
 
-/* Gentle fade+rise so navigating to a detail page (and the album loading in
-   afterwards) eases in instead of popping. */
 @keyframes fade-in {
     from {
         opacity: 0;
@@ -132,7 +122,6 @@ header {
     }
 }
 
-/* Loader-error fallback screen */
 .o-error {
     display: flex;
     flex-direction: column;
@@ -151,35 +140,27 @@ header {
     display: none !important;
 }
 
-/* ============================================================
-   "Stage" mode: while a preview is playing we dissolve the globe
-   so the UE5 Niagara music visualizer (composited behind this
-   browser widget) shows through. Only the sidebar UI stays.
-   Toggled by adding `is-playing` to <html> in SoundtrackPlayer.
-   ============================================================ */
 .mapboxgl-canvas,
-.mapboxgl-marker {
+.mapboxgl-marker,
+.c-stop,
+.c-stop__no {
     transition: opacity 0.6s ease;
 }
 
-/* Transparent page so UE can composite the Niagara system underneath. */
 html.is-playing,
 html.is-playing body {
     background: transparent;
 }
 
-/* While a preview is playing, dissolve the globe + candle markers so the UE5
-   Niagara visualizer shows through; they fade back in when playback pauses. */
 html.is-playing .mapboxgl-canvas,
 html.is-playing .mapboxgl-marker,
-
-html.is-playing .c-candle {
+html.is-playing .c-candle,
+html.is-playing .c-stop,
+html.is-playing .c-stop__no {
     opacity: 0;
     pointer-events: none;
 }
 
-/* Skull lantern in the header's right corner (brand view only). It shares the
-   slot the Back button uses on the detail view, so it disappears there. */
 .o-lamp {
     height: 3.4rem;
     width: auto;
@@ -191,7 +172,6 @@ html.is-playing .c-candle {
     filter: drop-shadow(0 0 16px hsla(276, 34%, 60%, 0.4));
 }
 
-/* Utility: muted empty/placeholder note (reusable). */
 .u-empty {
     padding: var(--space-md) 0;
     color: var(--color-text-muted);

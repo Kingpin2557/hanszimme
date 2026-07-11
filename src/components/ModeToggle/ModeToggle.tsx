@@ -1,8 +1,6 @@
 import "./ModeToggle.css";
 import { useSearchParams } from "react-router-dom";
 
-// Switches the map between films and live tours, clearing the other mode's
-// params so you never land on tours with a leftover country filter (or back).
 export default function ModeToggle() {
   const [params, setParams] = useSearchParams();
   const mode = params.get("mode") === "tours" ? "tours" : "movies";

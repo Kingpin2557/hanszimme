@@ -12,15 +12,13 @@ interface DetailProps {
 }
 
 function Detail({ movie }: DetailProps) {
-  // Album + tracks come from the route loader (fetched with the movie), so the
-  // player renders immediately instead of firing its own request afterwards.
+
   const { album, tracks } = useLoaderData() as DetailLoaderData;
 
   const dialogRef = useRef<HTMLDialogElement>(null);
   const overviewRef = useRef<HTMLParagraphElement>(null);
   const [isTruncated, setIsTruncated] = useState(false);
 
-  // Only offer the dialog when the clamped overview actually overflows.
   useLayoutEffect(() => {
     const el = overviewRef.current;
     if (!el) return;

@@ -12,8 +12,6 @@ type ApiMovie = {
   album: { id: number; title: string; itunesUrl: string | null } | null;
 };
 
-// Album + tracks the player needs, loaded alongside the movie so the detail
-// page renders complete (no second request popping in afterwards).
 export type PlayerAlbum = {
   title: string;
   artist: string;
@@ -88,8 +86,6 @@ export const movieLoader: LoaderFunction = async () => {
 export const movieDetailLoader: LoaderFunction = async ({ params }) => {
   const slug = params.movieSlug;
 
-  // Fetch the movie AND its soundtrack tracks in parallel so everything is
-  // ready by the time the detail page renders.
   const [movie, soundtrack] = await Promise.all([
     fetchMovies(`/${slug}`),
     fetch(`${import.meta.env.VITE_MOVIE_API}/api/movie/${slug}/tracks`)

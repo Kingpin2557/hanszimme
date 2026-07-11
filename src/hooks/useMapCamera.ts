@@ -5,11 +5,6 @@ const initialPos = { longitude: 3.72, latitude: 51.05, zoom: 2 };
 
 type Point = { lng: number; lat: number };
 
-/**
- * Frame the globe around a set of points (country markers, tour starts, or a
- * tour's stops). `focusKey` is the only dependency, so the camera only re-flies
- * when the selection actually changes — not on every render.
- */
 export function useMapCamera(
   mapRef: RefObject<MapRef | null>,
   focusKey: string,
@@ -43,6 +38,6 @@ export function useMapCamera(
       ],
       { padding: { top: 60, bottom: 60, left: 60, right: 650 }, duration: 1500 },
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [focusKey]);
 }

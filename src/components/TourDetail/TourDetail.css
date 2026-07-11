@@ -1,50 +1,9 @@
-/* Selected-tour panel: trail summary + scrollable stop list. */
 .c-tour-detail {
     display: flex;
     flex-direction: column;
     min-height: 0;
 }
 
-.c-tour-detail__meta {
-    margin-block-end: var(--space-md);
-    padding-inline: var(--space-lg);
-    color: var(--color-text-muted);
-}
-
-.c-tour-detail__stops {
-    list-style: none;
-    margin: var(--space-md) 0 0;
-    padding: 0;
-
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-
-    max-height: 320px;
-    overflow-y: auto;
-}
-
-.c-tour-detail__stops li {
-    display: flex;
-    flex-direction: column;
-    padding: var(--space-xs) var(--space-sm);
-
-    border-left: 2px solid var(--color-border-strong);
-    border-radius: var(--radius-sm);
-    background-color: var(--color-surface);
-}
-
-.c-tour-detail__city {
-    font-weight: 600;
-    color: var(--color-text);
-}
-
-.c-tour-detail__sub {
-    font-size: 0.8rem;
-    color: var(--color-text-muted);
-}
-
-/* Start → end country flags + names, matching the movie detail flag placement. */
 .c-tour-detail__route {
     display: flex;
     align-items: center;
@@ -73,4 +32,21 @@
 .c-tour-detail__arrow {
     color: var(--color-accent);
     font-weight: 700;
+}
+
+.c-tour-detail__meta {
+    margin-block-end: var(--space-md);
+    padding-inline: var(--space-lg);
+    color: var(--color-text-muted);
+}
+
+.c-tour-detail__fly {
+    align-self: flex-start;
+    margin-inline: var(--space-lg);
+    color: var(--color-accent);
+}
+
+.c-tour-detail__fly:hover {
+    border-color: var(--color-border-strong);
+    box-shadow: 0 0 18px var(--accent-glow);
 }

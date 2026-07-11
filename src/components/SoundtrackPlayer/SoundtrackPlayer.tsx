@@ -38,16 +38,14 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Refs for audio elements – one per track
   const audioRefs = useRef<Map<number, HTMLAudioElement>>(new Map());
   const durationMap = useRef<Map<number, number>>(new Map());
+  const tracksRef = useRef<HTMLUListElement>(null);
 
-  // Web Audio graph – shared across tracks
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const activeSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  // createMediaElementSource may be called only ONCE per element, so keep the
-  // node we made for each one and reuse it on later plays.
+
   const sourceMap = useRef<Map<HTMLAudioElement, MediaElementAudioSourceNode>>(
     new Map(),
   );
@@ -58,17 +56,27 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
 
   const activeBandsCount = 16;
 
-  // Sync playing state with CSS
   useEffect(() => {
     document.documentElement.classList.toggle("is-playing", isPlaying);
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 
-  // Clean up Web Audio on unmount
+  useEffect(() => {
+    if (currentId == null) return;
+    const container = tracksRef.current;
+    const el = container?.querySelector<HTMLElement>(
+      `[data-track-id="${currentId}"]`,
+    );
+    if (!container || !el) return;
+    const delta =
+      el.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    container.scrollTo({ top: container.scrollTop + delta, behavior: "smooth" });
+  }, [currentId]);
+
   useEffect(() => {
     return () => {
       stopLogging();
-      // Release every track's audio so nothing keeps buffering on the overview.
+
       for (const el of audioRefs.current.values()) {
         try {
           el.pause();
@@ -94,7 +102,6 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     };
   }, []);
 
-  // Shared analyser and context – initialised once
   function initSharedAudioGraph() {
     if (audioCtxRef.current) return;
     try {
@@ -110,14 +117,11 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     }
   }
 
-  // Route a specific audio element into the shared analyser. Each element gets
-  // its MediaElementSource created exactly once and cached in sourceMap.
   function connectAudioElement(audio: HTMLAudioElement) {
     const ctx = audioCtxRef.current;
     const analyser = analyserRef.current;
     if (!ctx || !analyser) throw new Error("Audio graph not ready");
 
-    // Detach whatever was previously feeding the analyser.
     if (activeSourceRef.current) {
       try { activeSourceRef.current.disconnect(); } catch (e) { void e; }
       activeSourceRef.current = null;
@@ -125,7 +129,7 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
 
     let source = sourceMap.current.get(audio);
     if (!source) {
-      source = ctx.createMediaElementSource(audio); // once per element
+      source = ctx.createMediaElementSource(audio);
       sourceMap.current.set(audio, source);
     }
     source.connect(analyser);
@@ -134,7 +138,6 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     if (ctx.state === "suspended") ctx.resume().catch(() => {});
   }
 
-  // FFT logging
   function stopLogging() {
     if (rafRef.current) {
       cancelAnimationFrame(rafRef.current);
@@ -169,7 +172,6 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     rafRef.current = requestAnimationFrame(tick);
   }
 
-  // ====== CORE PLAYBACK ======
   async function playTrack(track: Track) {
     if (isTransitioning.current) return;
     isTransitioning.current = true;
@@ -181,20 +183,16 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
       const audio = audioRefs.current.get(track.id);
       if (!audio) throw new Error(`No audio element for track ${track.id}`);
 
-      // Pause all other tracks
       for (const [id, el] of audioRefs.current) {
         if (id !== track.id && !el.paused) el.pause();
       }
 
-      // Reset UI time for this track
       setCurrentTime(0);
       setDuration(0);
 
-      // Ensure shared graph exists, then route this element into it.
       initSharedAudioGraph();
       connectAudioElement(audio);
 
-      // Wait for metadata if not yet loaded
       if (!audio.duration || !isFinite(audio.duration)) {
         await new Promise<void>((resolve, reject) => {
           let resolved = false;
@@ -227,11 +225,9 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
         });
       }
 
-      // Set duration from the map or the audio element
       const dur = durationMap.current.get(track.id) ?? audio.duration;
       if (isFinite(dur)) setDuration(dur);
 
-      // Resume context if suspended
       if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
         await audioCtxRef.current.resume();
       }
@@ -258,13 +254,12 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     }
   }
 
-  // ====== USER INTERACTION ======
   async function selectTrack(track: Track) {
     const audio = audioRefs.current.get(track.id);
     if (!audio || isLoading || isTransitioning.current) return;
 
     if (currentId === track.id) {
-      // Toggle play / pause on the active track.
+
       if (isPlaying) {
         audio.pause();
         setIsPlaying(false);
@@ -285,13 +280,9 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
       return;
     }
 
-    // Different track
     await playTrack(track);
   }
 
-  // ====== EVENT HANDLERS (attached via React props) ======
-
-  // Auto-advance to the next track; stop once the album has finished.
   function handleEnded(trackId: number) {
     const idx = tracks.findIndex((t) => t.id === trackId);
     const next = idx === -1 ? undefined : tracks[idx + 1];
@@ -300,7 +291,7 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
       currentTrackIndexRef.current = idx + 1;
       setTimeout(() => playTrack(next), 150);
     } else {
-      // Last track done — stop cleanly.
+
       setIsPlaying(false);
       setCurrentTime(0);
       stopLogging();
@@ -321,7 +312,6 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
     if (Number.isFinite(t)) setCurrentTime(t);
   }
 
-  // Seek bar
   function seek(e: React.MouseEvent<HTMLDivElement>) {
     if (!currentId) return;
     const audio = audioRefs.current.get(currentId);
@@ -361,11 +351,11 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
         <div className="c-player__loading">⏳ Loading audio...</div>
       )}
 
-      <ul className="c-player__tracks">
+      <ul className="c-player__tracks" ref={tracksRef}>
         {tracks.map((track) => {
           const isActive = currentId === track.id;
           return (
-            <li key={track.id} data-active={isActive || undefined}>
+            <li key={track.id} data-track-id={track.id} data-active={isActive || undefined}>
               <button
                 type="button"
                 className="c-player__track"
@@ -405,8 +395,6 @@ export default function SoundtrackPlayer({ album, tracks }: SoundtrackPlayerProp
         })}
       </ul>
 
-      {/* Hidden audio elements – one per track. preload="auto" so we don't
-          transcode every track on mount; loading happens on first play. */}
       <div style={{ display: "none" }}>
         {tracks.map((track) => (
           <audio

@@ -1,5 +1,3 @@
-/* Movie detail panel + description dialog. */
-
 .c-detail {
     animation: fade-in 0.3s ease both;
 
@@ -37,7 +35,6 @@
     gap: var(--space-sm);
 }
 
-/* Overview truncated to a few lines; click to open the full text in a dialog. */
 .c-detail__overview {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -50,7 +47,6 @@
     transition: color var(--transition);
 }
 
-/* Only interactive when the text is actually clamped. */
 .c-detail__overview[data-clickable] {
     cursor: pointer;
 }

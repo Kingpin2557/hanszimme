@@ -13,8 +13,6 @@ type SidebarHeaderProps = {
 function SidebarHeader({ movieSlug, selectedMovie, selectedTour }: SidebarHeaderProps) {
   const navigate = useNavigate();
 
-  // A selected movie (route) or tour (param) both show a title + Back button.
-  // navigate(-1) works for both since each selection was a navigation.
   if (movieSlug || selectedTour) {
     return (
       <>
@@ -27,7 +25,6 @@ function SidebarHeader({ movieSlug, selectedMovie, selectedTour }: SidebarHeader
     );
   }
 
-  // List view: brand (logo + title) on the left, skull lantern on the right.
   return (
     <>
       <div className="o-brand">

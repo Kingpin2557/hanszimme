@@ -1,4 +1,3 @@
-/* Full-screen loading state (initial load + hydration). */
 .o-loader {
     display: flex;
     flex-direction: column;

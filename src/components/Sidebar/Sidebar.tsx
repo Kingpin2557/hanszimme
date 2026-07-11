@@ -13,6 +13,7 @@ type SidebarProps = {
   mode?: "movies" | "tours";
   tours?: Tour[];
   selectedTour?: Tour;
+  onFlyThrough?: () => void;
   toolbar?: React.ReactNode;
   children?: React.ReactNode;
 };
@@ -24,6 +25,7 @@ function SidebarContent({
   mode = "movies",
   tours = [],
   selectedTour,
+  onFlyThrough,
   toolbar,
   children,
 }: SidebarProps) {
@@ -34,7 +36,6 @@ function SidebarContent({
     navigate(`/${slugify(m.title)}?iso=${countryCode}`);
   };
 
-  // A movie detail route always wins (it has its own URL).
   if (slug) {
     return (
       <>
@@ -44,13 +45,12 @@ function SidebarContent({
     );
   }
 
-  // Tours mode: a selected tour shows its detail, otherwise the tours list.
   if (mode === "tours") {
     return (
       <>
         {children}
         {selectedTour ? (
-          <TourDetail tour={selectedTour} />
+          <TourDetail tour={selectedTour} onFlyThrough={onFlyThrough} />
         ) : (
           <>
             {toolbar}
@@ -61,7 +61,6 @@ function SidebarContent({
     );
   }
 
-  // Movies mode: filters + the movie list.
   return (
     <>
       {children}

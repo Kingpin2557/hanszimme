@@ -10,42 +10,32 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
-    /* ============================================================
-       DESIGN TOKENS — single source of truth. Edit here only.
-       Modern take on hans-zimmer.com: black bg, muted-purple accent,
-       dark-gray panels, Montserrat/Open Sans, grain + vignette.
-       ============================================================ */
-
-    /* ---- Typography ---- */
     --font-display: "Montserrat", system-ui, Helvetica, Arial, sans-serif;
     --font-body: "Open Sans", system-ui, Helvetica, Arial, sans-serif;
 
-    /* ---- Colors (solid — no alpha backgrounds) ---- */
-    --color-bg: hsl(0, 0%, 0%); /* #000 page backdrop */
-    --color-panel: hsl(0, 0%, 13%); /* #202020 sidebar / dialog */
-    --color-surface: hsl(0, 0%, 16%); /* cards, inputs */
-    --color-surface-hover: hsl(276, 22%, 18%); /* purple-tinted hover */
-    --color-border: hsl(276, 14%, 24%); /* subtle purple-gray hairline */
-    --color-border-strong: hsl(276, 34%, 60%); /* accent purple border */
-    --color-text: hsl(0, 0%, 100%); /* white body text */
-    --color-text-muted: hsl(0, 0%, 60%); /* #999 secondary */
-    --color-accent: hsl(276, 34%, 60%); /* #a178bc muted purple */
-    --color-accent-hover: hsl(276, 44%, 72%); /* lighter purple */
-    --color-start: hsl(145, 55%, 45%); /* tour start marker (green) */
-    --color-backdrop: hsla(0, 0%, 0%, 0.5); /* dialog backdrop (only translucent bg) */
+    --color-bg: hsl(0, 0%, 0%);
+    --color-panel: hsl(0, 0%, 13%);
+    --color-surface: hsl(0, 0%, 16%);
+    --color-surface-hover: hsl(276, 22%, 18%);
+    --color-border: hsl(276, 14%, 24%);
+    --color-border-strong: hsl(276, 34%, 60%);
+    --color-text: hsl(0, 0%, 100%);
+    --color-text-muted: hsl(0, 0%, 60%);
+    --color-accent: hsl(276, 34%, 60%);
+    --color-accent-hover: hsl(276, 44%, 72%);
+    --color-start: hsl(145, 55%, 45%);
+    --color-backdrop: hsla(0, 0%, 0%, 0.5);
     --color-danger: hsl(2, 80%, 70%);
     --color-danger-surface: hsl(2, 45%, 16%);
 
-    /* ---- Glows / effects (alpha ok — these are shadows, not fills) ---- */
     --accent-glow: hsla(276, 34%, 60%, 0.45);
-    /* Opaque dark panel with a purple top-glow — shared by cards + tour rows. */
+
     --surface-gradient:
         radial-gradient(130% 90% at 50% -20%, hsla(276, 34%, 60%, 0.22), transparent 60%),
         linear-gradient(hsl(0, 0%, 15%), hsl(0, 0%, 10%));
     --shadow-panel: 0 20px 60px hsla(0, 0%, 0%, 0.6);
     --transition: 0.2s ease;
 
-    /* ---- Candle / flame (kept warm — real fire against the dark UI) ---- */
     --flame-core: hsl(50, 100%, 90%);
     --flame-mid: hsl(40, 100%, 72%);
     --flame-outer: hsl(25, 100%, 56%);
@@ -58,21 +48,18 @@
     --candle-body-w: 10px;
     --candle-body-h: 22px;
 
-    /* ---- Border radius ---- */
     --radius-xs: 2px;
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
     --radius-pill: 999px;
 
-    /* ---- Spacing scale ---- */
     --space-2xs: 0.25rem;
     --space-xs: 0.5rem;
     --space-sm: 1rem;
     --space-md: 1.5rem;
     --space-lg: 2rem;
 
-    /* ---- Layout dimensions ---- */
     --sidebar-width: 700px;
     --sidebar-inset: 50px;
     --sidebar-padding: 20px;

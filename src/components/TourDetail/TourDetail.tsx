@@ -7,9 +7,12 @@ import CountryFlag from "../CountryFlag/CountryFlag";
 type PlayerAlbum = { title: string; artist: string; artwork: string | null };
 type PlayerTrack = { id: number; title: string; durationMs: number | null };
 
-// Selected tour: trail summary + stop list, plus the Hans Zimmer live album
-// player. Tracks are fetched on select (tours aren't part of the route loader).
-export default function TourDetail({ tour }: { tour: Tour }) {
+type TourDetailProps = {
+  tour: Tour;
+  onFlyThrough?: () => void;
+};
+
+export default function TourDetail({ tour, onFlyThrough }: TourDetailProps) {
   const [album, setAlbum] = useState<PlayerAlbum | null>(
     tour.album
       ? { title: tour.album.title, artist: tour.album.artist, artwork: tour.album.artwork }
@@ -53,19 +56,13 @@ export default function TourDetail({ tour }: { tour: Tour }) {
         {tour.years} · {tour.stopCount} stops · {tour.start.city} → {last.city}
       </p>
 
-      {album && <SoundtrackPlayer album={album} tracks={tracks} />}
+      {tour.stops.length > 1 && (
+        <button type="button" className="c-tour-detail__fly" onClick={onFlyThrough}>
+          ▶ Fly the journey
+        </button>
+      )}
 
-      <ol className="c-tour-detail__stops">
-        {tour.stops.map((s, i) => (
-          <li key={`${s.date}-${i}`}>
-            <span className="c-tour-detail__city">{s.city}</span>
-            <span className="c-tour-detail__sub">
-              {s.country}
-              {s.date ? ` · ${s.date}` : ""}
-            </span>
-          </li>
-        ))}
-      </ol>
+      {album && <SoundtrackPlayer album={album} tracks={tracks} />}
     </div>
   );
 }

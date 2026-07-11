@@ -20,14 +20,15 @@ const initialPos = {
   padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
 
-// Mapbox "ant path" dash sequence: cycling through these animates the dashes
-// so the trail visibly flows from the first stop to the last (travel direction).
-const DASH_SEQUENCE: number[][] = [
-  [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5], [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
-  [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5], [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1], [0, 3.5, 3, 0.5],
-];
+const antPathDashes = (dash = 3, gap = 4, step = 0.5): number[][] => {
+  const seq: number[][] = [];
+  for (let t = 0; t <= dash; t += step) seq.push([t, gap, dash - t]);
+  for (let t = step; t < gap; t += step) seq.push([0, t, dash, gap - t]);
+  return seq;
+};
 
-// Ratings are bucketed to a whole number out of 10 for an exact-match filter.
+const DASH_SEQUENCE = antPathDashes();
+
 const roundRating = (score: number) => Math.round(score);
 
 type LoaderData =
@@ -36,20 +37,21 @@ type LoaderData =
 
 function Home() {
   const mapRef = useRef<MapRef>(null);
+  const flyTimer = useRef<number | null>(null);
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
 
   const iso = params.get("iso")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
-  const rating = Number(params.get("rating")) || 0; // exact rating out of 10
-  // "movies" shows the filmography; "tours" shows his live tours as trails.
+  const rating = Number(params.get("rating")) || 0;
+
   const mode = params.get("mode") === "tours" ? "tours" : "movies";
   const tourId = params.get("tour") ?? "";
 
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
-  // Tours are fetched lazily (they don't block the initial map render).
+
   const [tours, setTours] = useState<Tour[]>([]);
   useEffect(() => {
     let active = true;
@@ -62,7 +64,6 @@ function Home() {
   }, []);
   const selectedTour = tours.find((t) => t.id === tourId);
 
-  // ---- Movies: de-dupe then apply the three filters ----
   const deduped = allMovies.filter((m, i, self) => isUnique(m, i, self));
   const matchesGenre = (m: Movie) => !genre || m.genres.includes(genre);
   const matchesRating = (m: Movie) => !rating || roundRating(m.rating.score) === rating;
@@ -73,7 +74,6 @@ function Home() {
     (m, i, self) => i === self.findIndex((x) => x.origin_country.code === m.origin_country.code),
   );
 
-  // Dynamic filter options (each excludes its own filter, respects the others).
   const countryNames: Record<string, string> = {};
   for (const m of deduped) {
     if (m.origin_country && matchesGenre(m) && matchesRating(m)) {
@@ -96,8 +96,6 @@ function Home() {
   }
   const ratings = [...ratingSet].sort((a, b) => a - b);
 
-  // Country with a single movie auto-selects its genre + rating; switching
-  // country drops a filter that would leave it empty. (Movies mode only.)
   useEffect(() => {
     if (movieSlug || mode === "tours" || !iso) return;
     const inCountry = deduped.filter((m) => matchesCountry(m, iso));
@@ -128,10 +126,9 @@ function Home() {
     }
 
     if (changed) setParams(next, { replace: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [iso, movieSlug, mode]);
 
-  // ---- Camera focus: films by country, tours by start, a tour by its stops ----
   let points: { lng: number; lat: number }[];
   let focusKey: string;
   if (mode === "tours") {
@@ -148,7 +145,6 @@ function Home() {
   }
   useMapCamera(mapRef, focusKey, points);
 
-  // Animate the dashed trail so it flows in travel order (Mapbox ant path).
   useEffect(() => {
     const map = mapRef.current?.getMap();
     if (!map || mode !== "tours" || !selectedTour) return;
@@ -165,6 +161,33 @@ function Home() {
     raf = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(raf);
   }, [mode, selectedTour?.id]);
+
+  useEffect(() => {
+    return () => {
+      if (flyTimer.current) window.clearTimeout(flyTimer.current);
+    };
+  }, [selectedTour?.id]);
+
+  const flyThrough = () => {
+    const map = mapRef.current;
+    if (!map || !selectedTour) return;
+    if (flyTimer.current) window.clearTimeout(flyTimer.current);
+    const stops = selectedTour.stops;
+    let i = 0;
+    const step = () => {
+      if (i >= stops.length) return;
+      const s = stops[i];
+      map.flyTo({
+        center: [s.coords.lng, s.coords.lat],
+        zoom: 5,
+        padding: { top: 0, bottom: 0, left: 0, right: 700 },
+        duration: 2000,
+      });
+      i += 1;
+      flyTimer.current = window.setTimeout(step, 2400);
+    };
+    step();
+  };
 
   const toolbar = (
     <div className="c-toolbar">
@@ -184,7 +207,7 @@ function Home() {
         mapStyle="mapbox://styles/kingpin2557/cml40g6g1009y01qxeyw7etjg"
         style={{ width: "100%", height: "100%" }}
       >
-        {/* A selected tour draws a trail through its stops, in date order. */}
+
         {mode === "tours" && selectedTour && (
           <Source
             id="tour-trail"
@@ -198,14 +221,14 @@ function Home() {
               },
             }}
           >
-            {/* Dim solid line fills the gaps behind the animated dashes. */}
+
             <Layer
               id="tour-trail-bg"
               type="line"
               layout={{ "line-cap": "round", "line-join": "round" }}
               paint={{ "line-color": "#a178bc", "line-width": 4, "line-opacity": 0.35 }}
             />
-            {/* Bright dashes, animated to flow start -> end (see the effect below). */}
+
             <Layer
               id="tour-trail-flow"
               type="line"
@@ -215,7 +238,6 @@ function Home() {
           </Source>
         )}
 
-        {/* Film country candles */}
         {mode === "movies" &&
           movieMarkers.map((m) => (
             <Marker
@@ -233,7 +255,6 @@ function Home() {
             </Marker>
           ))}
 
-        {/* Tours overview: one candle at each tour's start city */}
         {mode === "tours" &&
           !selectedTour &&
           tours.map((t) => (
@@ -253,7 +274,6 @@ function Home() {
             </Marker>
           ))}
 
-        {/* Selected tour: a candle at every stop along the trail */}
         {mode === "tours" &&
           selectedTour &&
           selectedTour.stops.map((s, i) => (
@@ -287,6 +307,7 @@ function Home() {
             mode={mode}
             tours={tours}
             selectedTour={selectedTour}
+            onFlyThrough={flyThrough}
             toolbar={toolbar}
           >
             <header className="o-header">

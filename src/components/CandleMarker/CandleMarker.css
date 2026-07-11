@@ -1,6 +1,3 @@
-/* Candle map marker + flame flicker. */
-
-/* Candle map marker — a warm flame flickering over each country. */
 .c-candle {
     display: flex;
     flex-direction: column;

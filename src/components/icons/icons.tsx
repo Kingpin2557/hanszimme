@@ -1,5 +1,3 @@
-// Heroicons (outline, v2 — MIT licensed) inlined as components so we don't pull
-// in a dependency. https://heroicons.com
 type IconProps = { className?: string };
 
 export function PlayIcon({ className }: IconProps) {
