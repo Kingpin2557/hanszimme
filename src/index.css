@@ -31,6 +31,7 @@
     --color-text-muted: hsl(0, 0%, 60%); /* #999 secondary */
     --color-accent: hsl(276, 34%, 60%); /* #a178bc muted purple */
     --color-accent-hover: hsl(276, 44%, 72%); /* lighter purple */
+    --color-start: hsl(145, 55%, 45%); /* tour start marker (green) */
     --color-backdrop: hsla(0, 0%, 0%, 0.5); /* dialog backdrop (only translucent bg) */
     --color-danger: hsl(2, 80%, 70%);
     --color-danger-surface: hsl(2, 45%, 16%);

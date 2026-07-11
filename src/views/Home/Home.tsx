@@ -1,5 +1,5 @@
 import "./Home.css";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../../hooks/useMapCamera";
@@ -10,7 +10,7 @@ import ModeToggle from "../../components/ModeToggle/ModeToggle";
 
 import { isUnique, matchesCountry } from "../../script/utils/movieFiltes";
 import { type Movie, type Tour } from "../../types";
-import { type DetailLoaderData } from "../../loaders/loadMovies";
+import { type DetailLoaderData, fetchTours } from "../../loaders/loadMovies";
 import Sidebar from "../../components/Sidebar/Sidebar";
 
 const initialPos = {
@@ -20,11 +20,18 @@ const initialPos = {
   padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
 
+// Mapbox "ant path" dash sequence: cycling through these animates the dashes
+// so the trail visibly flows from the first stop to the last (travel direction).
+const DASH_SEQUENCE: number[][] = [
+  [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5], [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
+  [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5], [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1], [0, 3.5, 3, 0.5],
+];
+
 // Ratings are bucketed to a whole number out of 10 for an exact-match filter.
 const roundRating = (score: number) => Math.round(score);
 
 type LoaderData =
-  | { type: "movies"; data: Movie[]; tours: Tour[] }
+  | { type: "movies"; data: Movie[] }
   | DetailLoaderData;
 
 function Home() {
@@ -42,7 +49,17 @@ function Home() {
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
-  const tours = loaded.type === "movies" ? loaded.tours : [];
+  // Tours are fetched lazily (they don't block the initial map render).
+  const [tours, setTours] = useState<Tour[]>([]);
+  useEffect(() => {
+    let active = true;
+    fetchTours()
+      .then((t) => active && setTours(t))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const selectedTour = tours.find((t) => t.id === tourId);
 
   // ---- Movies: de-dupe then apply the three filters ----
@@ -131,6 +148,24 @@ function Home() {
   }
   useMapCamera(mapRef, focusKey, points);
 
+  // Animate the dashed trail so it flows in travel order (Mapbox ant path).
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (!map || mode !== "tours" || !selectedTour) return;
+    let step = 0;
+    let raf = 0;
+    const animate = (timestamp: number) => {
+      const next = Math.floor((timestamp / 50) % DASH_SEQUENCE.length);
+      if (next !== step && map.getLayer("tour-trail-flow")) {
+        map.setPaintProperty("tour-trail-flow", "line-dasharray", DASH_SEQUENCE[step]);
+        step = next;
+      }
+      raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [mode, selectedTour?.id]);
+
   const toolbar = (
     <div className="c-toolbar">
       <ModeToggle />
@@ -163,29 +198,19 @@ function Home() {
               },
             }}
           >
+            {/* Dim solid line fills the gaps behind the animated dashes. */}
             <Layer
-              id="tour-trail-line"
+              id="tour-trail-bg"
               type="line"
               layout={{ "line-cap": "round", "line-join": "round" }}
-              paint={{ "line-color": "#a178bc", "line-width": 2.5, "line-opacity": 0.9 }}
+              paint={{ "line-color": "#a178bc", "line-width": 4, "line-opacity": 0.35 }}
             />
-            {/* Repeating arrows along the line show the travel direction. */}
+            {/* Bright dashes, animated to flow start -> end (see the effect below). */}
             <Layer
-              id="tour-trail-arrows"
-              type="symbol"
-              layout={{
-                "symbol-placement": "line",
-                "symbol-spacing": 90,
-                "text-field": "▶",
-                "text-size": 13,
-                "text-keep-upright": false,
-                "text-allow-overlap": true,
-              }}
-              paint={{
-                "text-color": "#a178bc",
-                "text-halo-color": "#000000",
-                "text-halo-width": 1,
-              }}
+              id="tour-trail-flow"
+              type="line"
+              layout={{ "line-cap": "butt", "line-join": "round" }}
+              paint={{ "line-color": "#efe6ff", "line-width": 4, "line-dasharray": [0, 4, 3] }}
             />
           </Source>
         )}

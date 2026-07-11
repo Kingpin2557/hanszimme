@@ -7,7 +7,12 @@
     <title>hanszimmer</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot" style="display:flex;align-items:center;justify-content:center;width:100vw;height:100vh;background:#000">
+        <div style="width:42px;height:42px;border-radius:50%;border:3px solid #2a2333;border-top-color:#a178bc;animation:boot .8s linear infinite"></div>
+      </div>
+      <style>@keyframes boot{to{transform:rotate(360deg)}}</style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

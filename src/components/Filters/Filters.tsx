@@ -1,4 +1,4 @@
-import "./Filters.css"
+import "./Filters.css";
 import { useSearchParams } from "react-router-dom";
 import Dropdown from "../Dropdown/Dropdown";
 
@@ -22,8 +22,7 @@ function Filters({ countries, genres, ratings }: FiltersProps) {
     setParams(next);
   };
 
-  // Clearing the country resets genre + rating back to "All", so an empty
-  // selection always shows the default options rather than stale filters.
+  // Clearing the country resets genre + rating to "All".
   const setCountry = (value: string) => {
     const next = new URLSearchParams(params);
     if (value) {

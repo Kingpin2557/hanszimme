@@ -44,12 +44,17 @@
 
 /* Highlight the first (start) and last (end) stops. */
 .c-stop[data-endpoint="start"] .c-stop__no::after {
-    content: " ·start";
+    content: " start";
 }
 .c-stop[data-endpoint="end"] .c-stop__no::after {
-    content: " ·end";
+    content: " end";
 }
-.c-stop[data-endpoint] .c-stop__no {
+/* Start = green, end = light purple, so the two ends of the trail stand out. */
+.c-stop[data-endpoint="start"] .c-stop__no {
+    background-color: var(--color-start);
+    color: var(--color-bg);
+}
+.c-stop[data-endpoint="end"] .c-stop__no {
     background-color: var(--color-accent-hover);
     color: var(--color-bg);
 }

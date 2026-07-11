@@ -64,7 +64,7 @@ const fetchMovies = async (path: string = "") => {
 
 // Tours come from setlist.fm via our API; degrade gracefully to [] if the tours
 // endpoint is unavailable (e.g. no SETLIST_API_KEY yet) so films still load.
-const fetchTours = async (): Promise<Tour[]> => {
+export const fetchTours = async (): Promise<Tour[]> => {
   try {
     const res = await fetch(`${import.meta.env.VITE_MOVIE_API}/api/tours`);
     if (!res.ok) return [];
@@ -76,11 +76,13 @@ const fetchTours = async (): Promise<Tour[]> => {
 };
 
 export const movieLoader: LoaderFunction = async () => {
-  const [data, tours] = await Promise.all([fetchMovies(), fetchTours()]);
+  // Only the films block the first paint; tours load lazily in Home so the map
+  // isn't held back by the (slower) setlist.fm call.
+  const data = await fetchMovies();
   const movies = (data.movies as ApiMovie[])
     .filter((m) => m.originCountry)
     .map(toMovie);
-  return { type: "movies" as "movies", data: movies, tours };
+  return { type: "movies" as "movies", data: movies };
 };
 
 export const movieDetailLoader: LoaderFunction = async ({ params }) => {
