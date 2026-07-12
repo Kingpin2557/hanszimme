@@ -18,6 +18,7 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
   const [isPlaying, setIsPlaying] = useState(false);
   const tracksRef = useRef<HTMLUListElement>(null);
   const stateRef = useRef<{ tracks: Track[]; currentId: number | null }>({ tracks, currentId });
+  const isPlayingRef = useRef(isPlaying);
 
   useEffect(() => {
     document.documentElement.classList.toggle("is-playing", isPlaying);
@@ -64,6 +65,16 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
     };
     return () => {
       delete (window as unknown as { hzNext?: () => void }).hzNext;
+    };
+  }, []);
+
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  useEffect(() => {
+    return () => {
+      if (isPlayingRef.current) console.log("HZAUDIO|pause");
     };
   }, []);
 
