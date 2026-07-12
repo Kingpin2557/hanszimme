@@ -6,6 +6,7 @@ type Album = { title: string; artist: string; artwork: string | null };
 type Track = { id: number; title: string; durationMs: number | null; previewUrl: string };
 
 const API = import.meta.env.VITE_MOVIE_API;
+const FALLBACK_MS = 30000;
 
 interface SoundtrackPlayerProps {
   album: Album | null;
@@ -19,6 +20,7 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
   const tracksRef = useRef<HTMLUListElement>(null);
   const stateRef = useRef<{ tracks: Track[]; currentId: number | null }>({ tracks, currentId });
   const isPlayingRef = useRef(isPlaying);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("is-playing", isPlaying);
@@ -53,38 +55,56 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
   }, [tracks, currentId]);
 
   useEffect(() => {
-    (window as unknown as { hzNext?: () => void }).hzNext = () => {
-      const { tracks: list, currentId: cur } = stateRef.current;
-      if (!list.length) return;
-      const idx = list.findIndex((t) => t.id === cur);
-      const next = list[(idx + 1) % list.length];
-      if (!next) return;
-      setCurrentId(next.id);
-      setIsPlaying(true);
-      console.log(`HZAUDIO|${next.previewUrl}`);
-    };
-    return () => {
-      delete (window as unknown as { hzNext?: () => void }).hzNext;
-    };
-  }, []);
-
-  useEffect(() => {
     isPlayingRef.current = isPlaying;
   }, [isPlaying]);
 
   useEffect(() => {
     return () => {
       if (isPlayingRef.current) console.log("HZAUDIO|pause");
+      if (timerRef.current) window.clearTimeout(timerRef.current);
     };
   }, []);
 
+  const clearTimer = () => {
+    if (timerRef.current) {
+      window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+
+  const advance = () => {
+    const { tracks: list, currentId: cur } = stateRef.current;
+    if (!list.length) return;
+    const idx = list.findIndex((t) => t.id === cur);
+    const next = list[(idx + 1) % list.length];
+    if (next) play(next);
+  };
+
+  const arm = (ms: number) => {
+    clearTimer();
+    timerRef.current = window.setTimeout(advance, ms);
+  };
+
   const play = (track: Track) => {
+    clearTimer();
     setCurrentId(track.id);
     setIsPlaying(true);
     console.log(`HZAUDIO|${track.previewUrl}`);
+
+    arm(FALLBACK_MS);
+
+    const probe = new Audio();
+    probe.preload = "metadata";
+    probe.onloadedmetadata = () => {
+      if (stateRef.current.currentId !== track.id) return;
+      const secs = probe.duration;
+      if (Number.isFinite(secs) && secs > 0) arm(secs * 1000);
+    };
+    probe.src = track.previewUrl;
   };
 
   const pause = () => {
+    clearTimer();
     setIsPlaying(false);
     console.log("HZAUDIO|pause");
   };
