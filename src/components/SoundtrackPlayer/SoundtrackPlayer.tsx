@@ -5,8 +5,19 @@ import { PlayIcon, PauseIcon } from "../icons/icons";
 type Album = { title: string; artist: string; artwork: string | null };
 type Track = { id: number; title: string; durationMs: number | null; previewUrl: string };
 
-const API = import.meta.env.VITE_MOVIE_API;
 const FALLBACK_MS = 30000;
+
+const srgbHexToLinear = (hex: string): string => {
+  const h = hex.replace("#", "");
+  const channel = (offset: number): string => {
+    const s = parseInt(h.slice(offset, offset + 2), 16) / 255;
+    const lin = s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+    return lin.toFixed(4);
+  };
+  return `${channel(0)},${channel(2)},${channel(4)}`;
+};
+
+const formatGradient = (colors: string[]): string => colors.map(srgbHexToLinear).join(";");
 
 interface SoundtrackPlayerProps {
   album: Album | null;
@@ -26,20 +37,6 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
     document.documentElement.classList.toggle("is-playing", isPlaying);
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
-
-  useEffect(() => {
-    if (!gradient || gradient.length === 0) return;
-    const post = () => {
-      fetch(`${API}/api/current`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gradient }),
-      }).catch(() => {});
-    };
-    post();
-    const id = window.setInterval(post, 5000);
-    return () => window.clearInterval(id);
-  }, [gradient]);
 
   useEffect(() => {
     if (currentId == null) return;
@@ -90,6 +87,7 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
     setCurrentId(track.id);
     setIsPlaying(true);
     console.log(`HZAUDIO|${track.previewUrl}`);
+    if (gradient && gradient.length > 0) console.log(`HZGRAD|${formatGradient(gradient)}`);
 
     arm(FALLBACK_MS);
 
