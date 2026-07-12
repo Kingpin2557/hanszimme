@@ -17,6 +17,7 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const tracksRef = useRef<HTMLUListElement>(null);
+  const stateRef = useRef<{ tracks: Track[]; currentId: number | null }>({ tracks, currentId });
 
   useEffect(() => {
     document.documentElement.classList.toggle("is-playing", isPlaying);
@@ -45,6 +46,26 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
     const delta = el.getBoundingClientRect().top - container.getBoundingClientRect().top;
     container.scrollTo({ top: container.scrollTop + delta, behavior: "smooth" });
   }, [currentId]);
+
+  useEffect(() => {
+    stateRef.current = { tracks, currentId };
+  }, [tracks, currentId]);
+
+  useEffect(() => {
+    (window as unknown as { hzNext?: () => void }).hzNext = () => {
+      const { tracks: list, currentId: cur } = stateRef.current;
+      if (!list.length) return;
+      const idx = list.findIndex((t) => t.id === cur);
+      const next = list[(idx + 1) % list.length];
+      if (!next) return;
+      setCurrentId(next.id);
+      setIsPlaying(true);
+      console.log(`HZAUDIO|${next.previewUrl}`);
+    };
+    return () => {
+      delete (window as unknown as { hzNext?: () => void }).hzNext;
+    };
+  }, []);
 
   const play = (track: Track) => {
     setCurrentId(track.id);
