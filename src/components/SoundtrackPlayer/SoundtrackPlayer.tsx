@@ -39,6 +39,11 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
   }, [isPlaying]);
 
   useEffect(() => {
+    if (!gradient || gradient.length === 0) return;
+    console.log(`HZGRAD|${formatGradient(gradient)}`);
+  }, [gradient]);
+
+  useEffect(() => {
     if (currentId == null) return;
     const container = tracksRef.current;
     const el = container?.querySelector<HTMLElement>(`[data-track-id="${currentId}"]`);
@@ -87,7 +92,6 @@ export default function SoundtrackPlayer({ album, tracks, gradient }: Soundtrack
     setCurrentId(track.id);
     setIsPlaying(true);
     console.log(`HZAUDIO|${track.previewUrl}`);
-    if (gradient && gradient.length > 0) console.log(`HZGRAD|${formatGradient(gradient)}`);
 
     arm(FALLBACK_MS);
 
