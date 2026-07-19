@@ -73,7 +73,10 @@
 
     color-scheme: dark;
     color: var(--color-text);
-    background-color: var(--color-bg);
+    /* Always transparent, not just while playing: this page runs inside a
+       UE5 Web Browser Widget with a Niagara/galaxy background rendered
+       behind it, and that background must stay visible at all times. */
+    background-color: transparent;
 }
 
 a {
@@ -89,7 +92,7 @@ body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
-    background-color: var(--color-bg);
+    background-color: transparent;
 }
 
 h1 {

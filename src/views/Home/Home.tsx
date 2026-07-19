@@ -50,6 +50,16 @@ function Home() {
   const mode = params.get("mode") === "tours" ? "tours" : "movies";
   const tourId = params.get("tour") ?? "";
 
+  // Reflect the current mode on <html> so App.css can scope the
+  // is-playing "earth disappears" effect to movies only -- it must never
+  // apply while browsing tours.
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode;
+    return () => {
+      delete document.documentElement.dataset.mode;
+    };
+  }, [mode]);
+
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
