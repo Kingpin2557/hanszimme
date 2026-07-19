@@ -45,7 +45,7 @@ header {
     transform: translateY(-50%);
 
     width: var(--sidebar-width);
-    height: var(--sidebar-scroll-height);
+    height: var(--sidebar-height);
     max-height: 90vh;
     padding: var(--sidebar-padding);
 

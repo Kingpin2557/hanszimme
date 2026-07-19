@@ -60,10 +60,12 @@
     --space-md: 1.5rem;
     --space-lg: 2rem;
 
+    /* Fixed sidepanel size -- single source of truth, kept in sync with
+       PANEL_WIDTH / PANEL_HEIGHT in src/constants/panel.ts. */
     --sidebar-width: 700px;
+    --sidebar-height: 600px;
     --sidebar-inset: 50px;
     --sidebar-padding: 20px;
-    --sidebar-scroll-height: 600px;
     --badge-inset: 20px;
     --flag-width: 35px;
     --poster-height: 200px;

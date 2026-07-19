@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../../hooks/useMapCamera";
-import { usePanelDimensions, type PanelSize } from "../../hooks/usePanelDimensions";
+import { usePanelDimensions } from "../../hooks/usePanelDimensions";
 import SidebarHeader from "../../components/SidebarHeader/SidebarHeader";
 import CandleMarker from "../../components/CandleMarker/CandleMarker";
 import Filters from "../../components/Filters/Filters";
@@ -38,10 +38,8 @@ type LoaderData =
 
 function Home() {
   const mapRef = useRef<MapRef>(null);
-  const sidebarRef = useRef<HTMLElement>(null);
   const flyTimer = useRef<number | null>(null);
   const [flyIndex, setFlyIndex] = useState<number | null>(null);
-  const [panelSize, setPanelSize] = useState<PanelSize | null>(null);
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
 
@@ -56,10 +54,6 @@ function Home() {
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
 
-  // Lock the sidepanel to the Detail view's real size so every other view
-  // (movie list, tours, tour detail) renders at the same width/height.
-  usePanelDimensions(sidebarRef, Boolean(movieSlug && selectedMovie), setPanelSize);
-
   const [tours, setTours] = useState<Tour[]>([]);
   useEffect(() => {
     let active = true;
@@ -71,6 +65,14 @@ function Home() {
     };
   }, []);
   const selectedTour = tours.find((t) => t.id === tourId);
+
+  // Log the panel's fixed width/height (from src/constants/panel.ts, the
+  // same numbers as --sidebar-width/--sidebar-height in index.css) on every
+  // view -- `panelViewKey` changes on navigation so a fresh line gets
+  // logged per view even though this component/element never unmounts
+  // between views.
+  const panelViewKey = `${mode}:${movieSlug ?? ""}:${selectedTour?.id ?? ""}`;
+  usePanelDimensions(panelViewKey);
 
   const deduped = allMovies.filter((m, i, self) => isUnique(m, i, self));
   const matchesGenre = (m: Movie) => !genre || m.genres.includes(genre);
@@ -202,10 +204,6 @@ function Home() {
     step();
   };
 
-  const sidebarStyle = panelSize
-    ? { width: panelSize.width, height: panelSize.height }
-    : undefined;
-
   const toolbar = (
     <div className="c-toolbar">
       <ModeToggle />
@@ -318,7 +316,7 @@ function Home() {
             </Marker>
           ))}
 
-        <section className="o-sidebar" ref={sidebarRef} style={sidebarStyle}>
+        <section className="o-sidebar">
           <Sidebar
             slug={movieSlug}
             movie={selectedMovie}
