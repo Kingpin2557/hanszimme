@@ -1,10 +1,26 @@
 import type { Map as MapboxMap } from "mapbox-gl";
 
+// mapbox-gl types setPaintProperty/getPaintProperty's property-name
+// argument as a huge union of every valid paint property across every
+// layer type (not just "string"), so this has to be a real literal type --
+// not `string[]` -- for TypeScript to accept it at the call sites below.
+type OpacityPaintProperty =
+  | "background-opacity"
+  | "fill-opacity"
+  | "line-opacity"
+  | "circle-opacity"
+  | "fill-extrusion-opacity"
+  | "raster-opacity"
+  | "heatmap-opacity"
+  | "sky-opacity"
+  | "icon-opacity"
+  | "text-opacity";
+
 // Paint properties that control a layer's opacity, keyed by layer type.
 // Mapbox GL JS doesn't expose one generic "opacity" property -- every layer
 // type has its own (symbol layers even have two: one for the icon, one for
 // the text).
-const OPACITY_PROPS: Record<string, string[]> = {
+const OPACITY_PROPS: Record<string, OpacityPaintProperty[]> = {
   background: ["background-opacity"],
   fill: ["fill-opacity"],
   line: ["line-opacity"],
