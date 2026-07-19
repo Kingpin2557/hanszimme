@@ -141,18 +141,29 @@ header {
     display: none !important;
 }
 
-.mapboxgl-canvas {
+/* The globe's surface ("the earth") fades via Mapbox layer opacity, not
+   CSS -- see useEarthVisibility.ts / mapEarthVisibility.ts. A CSS opacity
+   on .mapboxgl-canvas would also hide the fog/star backdrop ("the galaxy"),
+   since Mapbox paints both into the same canvas; going through Mapbox's own
+   paint-property API instead leaves fog untouched, so the galaxy stays
+   visible while the surface disappears. */
+
+.mapboxgl-marker,
+.c-stop,
+.c-stop__no {
     transition: opacity 0.6s ease;
 }
 
-/* The "earth" (the map/globe render itself) fades out while music plays --
-   and only the earth: markers, candles, and tour stops stay put and stay
-   interactive. This only ever applies in movies mode; tours never hide the
-   earth, since `data-mode` (set on <html> in Home.tsx) has to be "movies"
-   for this selector to match. The page background is transparent at all
-   times (see index.css), independent of this -- that's what keeps the
-   UE5-rendered galaxy visible whether or not music is playing. */
-html.is-playing[data-mode="movies"] .mapboxgl-canvas {
+/* Markers, candles, and tour stops fade out together with the earth, in
+   movies mode only -- `data-mode` (set on <html> in Home.tsx) has to be
+   "movies" for this selector to match, so tours never hide anything here.
+   The page background is transparent at all times (see index.css),
+   independent of this -- that's what keeps the galaxy visible whether or
+   not music is playing. */
+html.is-playing[data-mode="movies"] .mapboxgl-marker,
+html.is-playing[data-mode="movies"] .c-candle,
+html.is-playing[data-mode="movies"] .c-stop,
+html.is-playing[data-mode="movies"] .c-stop__no {
     opacity: 0;
     pointer-events: none;
 }

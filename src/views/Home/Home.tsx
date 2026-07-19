@@ -4,6 +4,8 @@ import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../../hooks/useMapCamera";
 import { usePanelDimensions } from "../../hooks/usePanelDimensions";
+import { useIsPlaying } from "../../hooks/useIsPlaying";
+import { useEarthVisibility } from "../../hooks/useEarthVisibility";
 import SidebarHeader from "../../components/SidebarHeader/SidebarHeader";
 import CandleMarker from "../../components/CandleMarker/CandleMarker";
 import Filters from "../../components/Filters/Filters";
@@ -59,6 +61,14 @@ function Home() {
       delete document.documentElement.dataset.mode;
     };
   }, [mode]);
+
+  // Fade the globe's surface out while music plays, movies mode only --
+  // never for tours. Markers/candles/stops fade via CSS (see App.css);
+  // the globe itself has to go through Mapbox's layer API instead of a
+  // CSS opacity toggle on the canvas, so the fog/star backdrop behind it
+  // stays visible (see useEarthVisibility / setEarthVisible).
+  const isPlaying = useIsPlaying();
+  useEarthVisibility(mapRef, isPlaying && mode === "movies");
 
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
