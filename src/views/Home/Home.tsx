@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera } from "../../hooks/useMapCamera";
+import { usePanelDimensions, type PanelSize } from "../../hooks/usePanelDimensions";
 import SidebarHeader from "../../components/SidebarHeader/SidebarHeader";
 import CandleMarker from "../../components/CandleMarker/CandleMarker";
 import Filters from "../../components/Filters/Filters";
@@ -37,8 +38,10 @@ type LoaderData =
 
 function Home() {
   const mapRef = useRef<MapRef>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
   const flyTimer = useRef<number | null>(null);
   const [flyIndex, setFlyIndex] = useState<number | null>(null);
+  const [panelSize, setPanelSize] = useState<PanelSize | null>(null);
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
 
@@ -52,6 +55,10 @@ function Home() {
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
+
+  // Lock the sidepanel to the Detail view's real size so every other view
+  // (movie list, tours, tour detail) renders at the same width/height.
+  usePanelDimensions(sidebarRef, Boolean(movieSlug && selectedMovie), setPanelSize);
 
   const [tours, setTours] = useState<Tour[]>([]);
   useEffect(() => {
@@ -195,6 +202,10 @@ function Home() {
     step();
   };
 
+  const sidebarStyle = panelSize
+    ? { width: panelSize.width, height: panelSize.height }
+    : undefined;
+
   const toolbar = (
     <div className="c-toolbar">
       <ModeToggle />
@@ -307,7 +318,7 @@ function Home() {
             </Marker>
           ))}
 
-        <section className="o-sidebar">
+        <section className="o-sidebar" ref={sidebarRef} style={sidebarStyle}>
           <Sidebar
             slug={movieSlug}
             movie={selectedMovie}
