@@ -2,10 +2,10 @@ import "./Home.css";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
-import { useMapCamera } from "../../hooks/useMapCamera";
+import { useMapCamera, EARTH_ZOOM } from "../../hooks/useMapCamera";
 import { usePanelDimensions } from "../../hooks/usePanelDimensions";
 import { useIsPlaying } from "../../hooks/useIsPlaying";
-import { useEarthVisibility } from "../../hooks/useEarthVisibility";
+import { useGalaxyBackground } from "../../hooks/useGalaxyBackground";
 import SidebarHeader from "../../components/SidebarHeader/SidebarHeader";
 import CandleMarker from "../../components/CandleMarker/CandleMarker";
 import Filters from "../../components/Filters/Filters";
@@ -19,7 +19,7 @@ import Sidebar from "../../components/Sidebar/Sidebar";
 const initialPos = {
   longitude: 3.72,
   latitude: 51.05,
-  zoom: 2,
+  zoom: EARTH_ZOOM,
   padding: { top: 0, bottom: 0, left: 0, right: 750 },
 };
 
@@ -62,13 +62,14 @@ function Home() {
     };
   }, [mode]);
 
-  // Fade the globe's surface out while music plays, movies mode only --
-  // never for tours. Markers/candles/stops fade via CSS (see App.css);
-  // the globe itself has to go through Mapbox's layer API instead of a
-  // CSS opacity toggle on the canvas, so the fog/star backdrop behind it
-  // stays visible (see useEarthVisibility / setEarthVisible).
+  // The earth (and markers/candles/stops, via CSS -- see App.css) fades
+  // out while music plays, movies mode only -- never for tours. Before it
+  // fades, freeze whatever the map is currently showing (globe + galaxy
+  // backdrop together) as a page background, so the galaxy the visitor was
+  // looking at stays put once the globe itself disappears.
   const isPlaying = useIsPlaying();
-  useEarthVisibility(mapRef, isPlaying && mode === "movies");
+  const earthHidden = isPlaying && mode === "movies";
+  useGalaxyBackground(mapRef, earthHidden);
 
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
@@ -214,7 +215,7 @@ function Home() {
       const s = stops[i];
       map.flyTo({
         center: [s.coords.lng, s.coords.lat],
-        zoom: 5,
+        zoom: EARTH_ZOOM,
         padding: { top: 0, bottom: 0, left: 0, right: 700 },
         duration: 2000,
       });
@@ -241,6 +242,24 @@ function Home() {
         initialViewState={initialPos}
         mapStyle="mapbox://styles/kingpin2557/cml40g6g1009y01qxeyw7etjg"
         style={{ width: "100%", height: "100%" }}
+        // The visitor can only move the camera indirectly, by clicking a
+        // candle marker (which drives useMapCamera) -- every direct
+        // gesture is disabled so nobody can rotate, pan, or zoom the globe
+        // by hand. dragPan is the one that matters most for "no rotating
+        // the earth": on a globe projection, panning *is* spinning the
+        // sphere.
+        dragPan={false}
+        dragRotate={false}
+        scrollZoom={false}
+        doubleClickZoom={false}
+        touchZoomRotate={false}
+        touchPitch={false}
+        boxZoom={false}
+        keyboard={false}
+        // Lets useGalaxyBackground read real pixels back out of the canvas
+        // via toDataURL() -- without this Mapbox clears the backing buffer
+        // after each frame and the capture comes back blank.
+        preserveDrawingBuffer
       >
 
         {mode === "tours" && selectedTour && (
