@@ -151,11 +151,10 @@ header {
 /* The earth (the map canvas itself), markers, candles, and tour stops all
    fade out together while music plays, in movies mode only -- `data-mode`
    (set on <html> in Home.tsx) has to be "movies" for this selector to
-   match, so tours never hide anything here. Before this fires,
-   useGalaxyBackground (see hooks/useGalaxyBackground.ts) freezes whatever
-   the canvas was just showing as a page background, so the galaxy behind
-   the globe stays visible underneath instead of disappearing along with
-   the canvas. */
+   match, so tours never hide anything here. The page background is
+   transparent (see index.css), so once the canvas fades out, whatever's
+   rendered behind this browser widget shows straight through -- no
+   snapshot/freeze step needed. */
 html.is-playing[data-mode="movies"] .mapboxgl-canvas,
 html.is-playing[data-mode="movies"] .mapboxgl-marker,
 html.is-playing[data-mode="movies"] .c-candle,

@@ -4,8 +4,6 @@ import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera, EARTH_ZOOM } from "../../hooks/useMapCamera";
 import { usePanelDimensions } from "../../hooks/usePanelDimensions";
-import { useIsPlaying } from "../../hooks/useIsPlaying";
-import { useGalaxyBackground } from "../../hooks/useGalaxyBackground";
 import SidebarHeader from "../../components/SidebarHeader/SidebarHeader";
 import CandleMarker from "../../components/CandleMarker/CandleMarker";
 import Filters from "../../components/Filters/Filters";
@@ -62,15 +60,14 @@ function Home() {
     };
   }, [mode]);
 
-  // The earth (and markers/candles/stops, via CSS -- see App.css) fades
-  // out while music plays, movies mode only -- never for tours. Before it
-  // fades, freeze whatever the map is currently showing (globe + galaxy
-  // backdrop together) as a page background, so the galaxy the visitor was
-  // looking at stays put once the globe itself disappears.
-  const isPlaying = useIsPlaying();
-  const earthHidden = isPlaying && mode === "movies";
-  useGalaxyBackground(mapRef, earthHidden);
-
+  // The earth (and markers/candles/stops) fades out while music plays,
+  // movies mode only -- never for tours. Handled entirely in CSS via the
+  // `is-playing` class SoundtrackPlayer toggles on <html> plus the
+  // `data-mode` attribute set below -- see the
+  // html.is-playing[data-mode="movies"] rule in App.css. The page
+  // background itself is already transparent (see index.css), so once the
+  // canvas fades, whatever's rendered behind this browser widget (the
+  // galaxy) simply shows through -- no capture/freeze step needed.
   const loaded = useLoaderData() as LoaderData;
   const allMovies = loaded.type === "movies" ? loaded.data : [loaded.data];
   const selectedMovie = loaded.type === "movie" ? loaded.data : undefined;
@@ -256,10 +253,6 @@ function Home() {
         touchPitch={false}
         boxZoom={false}
         keyboard={false}
-        // Lets useGalaxyBackground read real pixels back out of the canvas
-        // via toDataURL() -- without this Mapbox clears the backing buffer
-        // after each frame and the capture comes back blank.
-        preserveDrawingBuffer
       >
 
         {mode === "tours" && selectedTour && (

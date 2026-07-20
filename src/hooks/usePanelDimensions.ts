@@ -4,8 +4,8 @@ import { PANEL_WIDTH, PANEL_HEIGHT } from "../constants/panel";
 /**
  * Logs the sidepanel's fixed width/height to the console on every view
  * (movie list, detail, tours, tour detail) as `HZPANEL|width,height`, the
- * same `HZ<TAG>|value` bridge format used by HZGRAD (see sampleGradient.ts)
- * and HZAUDIO (see SoundtrackPlayer.tsx). The UE5 kiosk shell's Web Browser
+ * same `HZ<TAG>|value` bridge format used by HZGRAD and HZAUDIO (both
+ * logged in SoundtrackPlayer.tsx). The UE5 kiosk shell's Web Browser
  * Widget binds to OnConsoleMessage and parses that line to spawn a cube
  * matching the panel's on-screen footprint, so the Niagara particles
  * closest to camera can be kept off (or clipped against) the UI area
