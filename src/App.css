@@ -151,8 +151,7 @@ header {
 
 .mapboxgl-canvas,
 .mapboxgl-marker,
-.c-stop,
-.c-stop__no {
+.c-stop {
     transition: opacity 0.6s ease;
 }
 
@@ -166,8 +165,7 @@ header {
 html.is-playing[data-mode="movies"] .mapboxgl-canvas,
 html.is-playing[data-mode="movies"] .mapboxgl-marker,
 html.is-playing[data-mode="movies"] .c-candle,
-html.is-playing[data-mode="movies"] .c-stop,
-html.is-playing[data-mode="movies"] .c-stop__no {
+html.is-playing[data-mode="movies"] .c-stop {
     opacity: 0;
     pointer-events: none;
 }

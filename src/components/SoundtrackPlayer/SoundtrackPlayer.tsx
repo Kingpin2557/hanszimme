@@ -23,18 +23,30 @@ interface SoundtrackPlayerProps {
   album: Album | null;
   tracks: Track[];
   gradient?: string[];
+  onPlayingChange?: (isPlaying: boolean) => void;
 }
 
-export default function SoundtrackPlayer({ album, tracks, gradient }: SoundtrackPlayerProps) {
+export default function SoundtrackPlayer({
+  album,
+  tracks,
+  gradient,
+  onPlayingChange,
+}: SoundtrackPlayerProps) {
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const tracksRef = useRef<HTMLUListElement>(null);
   const stateRef = useRef<{ tracks: Track[]; currentId: number | null }>({ tracks, currentId });
   const isPlayingRef = useRef(isPlaying);
   const timerRef = useRef<number | null>(null);
+  const onPlayingChangeRef = useRef(onPlayingChange);
+
+  useEffect(() => {
+    onPlayingChangeRef.current = onPlayingChange;
+  }, [onPlayingChange]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("is-playing", isPlaying);
+    onPlayingChangeRef.current?.(isPlaying);
     return () => document.documentElement.classList.remove("is-playing");
   }, [isPlaying]);
 

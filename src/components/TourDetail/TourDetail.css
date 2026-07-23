@@ -40,13 +40,3 @@
     color: var(--color-text-muted);
 }
 
-.c-tour-detail__fly {
-    align-self: flex-start;
-    margin-inline: var(--space-lg);
-    color: var(--color-accent);
-}
-
-.c-tour-detail__fly:hover {
-    border-color: var(--color-border-strong);
-    box-shadow: 0 0 18px var(--accent-glow);
-}

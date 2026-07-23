@@ -9,10 +9,10 @@ type PlayerTrack = { id: number; title: string; durationMs: number | null; previ
 
 type TourDetailProps = {
   tour: Tour;
-  onFlyThrough?: () => void;
+  onPlayingChange?: (isPlaying: boolean) => void;
 };
 
-export default function TourDetail({ tour, onFlyThrough }: TourDetailProps) {
+export default function TourDetail({ tour, onPlayingChange }: TourDetailProps) {
   const [album, setAlbum] = useState<PlayerAlbum | null>(
     tour.album
       ? { title: tour.album.title, artist: tour.album.artist, artwork: tour.album.artwork }
@@ -58,13 +58,14 @@ export default function TourDetail({ tour, onFlyThrough }: TourDetailProps) {
         {tour.years} · {tour.stopCount} stops · {tour.start.city} → {last.city}
       </p>
 
-      {tour.stops.length > 1 && (
-        <button type="button" className="c-tour-detail__fly" onClick={onFlyThrough}>
-          ▶ Fly the journey
-        </button>
+      {album && (
+        <SoundtrackPlayer
+          album={album}
+          tracks={tracks}
+          gradient={gradient}
+          onPlayingChange={onPlayingChange}
+        />
       )}
-
-      {album && <SoundtrackPlayer album={album} tracks={tracks} gradient={gradient} />}
     </div>
   );
 }

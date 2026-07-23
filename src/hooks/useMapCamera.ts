@@ -3,10 +3,15 @@ import { type MapRef } from "react-map-gl/mapbox";
 
 const initialPos = { longitude: 3.72, latitude: 51.05 };
 
-// The one zoom level used everywhere in the app. The camera only ever
-// pans to a new focus point -- it never zooms -- so the whole globe stays
-// in view throughout the experience. Matches the original idle-view zoom.
+// Overview zoom used whenever the camera has to frame multiple points at
+// once -- the idle globe, or an unselected tour's start pins/full route.
+// Matches the original idle-view zoom.
 export const EARTH_ZOOM = 2;
+
+// Closer zoom used whenever the camera focuses on a single point: a
+// selected country/candle, or one stop at a time during a tour's
+// fly-through animation.
+export const FOCUS_ZOOM = 4.5;
 
 type Point = { lng: number; lat: number };
 
@@ -27,7 +32,7 @@ export function useMapCamera(
     if (points.length === 1) {
       map.flyTo({
         center: [points[0].lng, points[0].lat],
-        zoom: EARTH_ZOOM,
+        zoom: FOCUS_ZOOM,
         padding: { top: 0, bottom: 0, left: 0, right: 700 },
         duration: 1500,
       });
@@ -37,9 +42,9 @@ export function useMapCamera(
     // Center on the midpoint of the bounding box -- not a plain average of
     // every point, which would skew toward wherever pins happen to
     // cluster -- so the candles stay evenly framed around the focus point.
-    // Always at the fixed EARTH_ZOOM: this replaces the old fitBounds call,
-    // which computed its own zoom to fit the bounds and is exactly the kind
-    // of zoom change the app no longer does.
+    // This overview stays at EARTH_ZOOM; zooming in on a single candle
+    // happens separately (see FOCUS_ZOOM above) once one is selected or the
+    // camera flies stop-to-stop through a tour.
     const lngs = points.map((p) => p.lng);
     const lats = points.map((p) => p.lat);
     const centerLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;

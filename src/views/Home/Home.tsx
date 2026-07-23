@@ -2,7 +2,7 @@ import "./Home.css";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
-import { useMapCamera, EARTH_ZOOM } from "../../hooks/useMapCamera";
+import { useMapCamera, EARTH_ZOOM, FOCUS_ZOOM } from "../../hooks/useMapCamera";
 import { usePanelDimensions } from "../../hooks/usePanelDimensions";
 import SidebarHeader from "../../components/SidebarHeader/SidebarHeader";
 import CandleMarker from "../../components/CandleMarker/CandleMarker";
@@ -199,7 +199,7 @@ function Home() {
 
   const flyThrough = () => {
     const map = mapRef.current;
-    if (!map || !selectedTour) return;
+    if (!map || !selectedTour || selectedTour.stops.length < 2) return;
     if (flyTimer.current) window.clearTimeout(flyTimer.current);
     const stops = selectedTour.stops;
     let i = 0;
@@ -212,7 +212,7 @@ function Home() {
       const s = stops[i];
       map.flyTo({
         center: [s.coords.lng, s.coords.lat],
-        zoom: EARTH_ZOOM,
+        zoom: FOCUS_ZOOM,
         padding: { top: 0, bottom: 0, left: 0, right: 700 },
         duration: 2000,
       });
@@ -220,6 +220,15 @@ function Home() {
       flyTimer.current = window.setTimeout(step, 2400);
     };
     step();
+  };
+
+  // The journey used to need a "Fly the journey" button; now it starts
+  // itself the moment the tour's soundtrack starts playing (SoundtrackPlayer
+  // reports its play state up through TourDetail/Sidebar). isPlaying only
+  // flips true on a genuine pause->play transition, so this fires once per
+  // playback start rather than once per track.
+  const handleTourPlayingChange = (playing: boolean) => {
+    if (playing) flyThrough();
   };
 
   const toolbar = (
@@ -342,7 +351,6 @@ function Home() {
                       : undefined
                 }
               >
-                <span className="c-stop__no">{i + 1}</span>
                 <CandleMarker />
               </div>
             </Marker>
@@ -356,7 +364,7 @@ function Home() {
             mode={mode}
             tours={tours}
             selectedTour={selectedTour}
-            onFlyThrough={flyThrough}
+            onTourPlayingChange={handleTourPlayingChange}
             toolbar={toolbar}
           >
             <header className="o-header">

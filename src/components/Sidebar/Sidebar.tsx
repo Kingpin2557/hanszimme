@@ -13,7 +13,7 @@ type SidebarProps = {
   mode?: "movies" | "tours";
   tours?: Tour[];
   selectedTour?: Tour;
-  onFlyThrough?: () => void;
+  onTourPlayingChange?: (isPlaying: boolean) => void;
   toolbar?: React.ReactNode;
   children?: React.ReactNode;
 };
@@ -25,7 +25,7 @@ function SidebarContent({
   mode = "movies",
   tours = [],
   selectedTour,
-  onFlyThrough,
+  onTourPlayingChange,
   toolbar,
   children,
 }: SidebarProps) {
@@ -50,7 +50,7 @@ function SidebarContent({
       <>
         {children}
         {selectedTour ? (
-          <TourDetail tour={selectedTour} onFlyThrough={onFlyThrough} />
+          <TourDetail tour={selectedTour} onPlayingChange={onTourPlayingChange} />
         ) : (
           <>
             {toolbar}
