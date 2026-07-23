@@ -71,6 +71,14 @@ header {
     overflow-y: auto;
 }
 
+/* Movies-only modifier (TourList reuses the bare .o-scroll for its own,
+   shorter rows, so this can't live on .o-scroll itself). Guarantees at
+   least 2.5 movie cards are visible before scrolling is needed -- see
+   --card-row-height in index.css. */
+.o-scroll--movies {
+    min-height: calc(2.5 * var(--card-row-height) + 2 * var(--space-sm));
+}
+
 .o-header {
     display: flex;
     justify-content: space-between;

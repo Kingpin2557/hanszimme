@@ -61,15 +61,32 @@
     --space-lg: 2rem;
 
     /* Fixed sidepanel size -- single source of truth, kept in sync with
-       PANEL_WIDTH / PANEL_HEIGHT in src/constants/panel.ts. */
+       PANEL_WIDTH / PANEL_HEIGHT in src/constants/panel.ts. Height was
+       bumped from 600 -> 740 so the movie-list and track-list scroll
+       containers below have room to guarantee their minimum visible rows
+       (see --card-row-height / --track-row-height and their usages in
+       App.css / SoundtrackPlayer.css). */
     --sidebar-width: 700px;
-    --sidebar-height: 600px;
+    --sidebar-height: 740px;
     --sidebar-inset: 50px;
     --sidebar-padding: 20px;
     --badge-inset: 20px;
     --flag-width: 35px;
     --poster-height: 200px;
     --card-poster-height: 130px;
+
+    /* Row-height formulas for the sidebar's two scrollable lists, used to
+       guarantee a minimum number of visible rows before scrolling kicks in
+       (2.5 movie cards, ~4.5 tracks) instead of a magic-number max-height.
+       --card-row-height mirrors the actual box model of .c-card in
+       MovieCard.css (poster + 10px, plus vertical padding and border).
+       --track-row-height mirrors .c-player__track in SoundtrackPlayer.css
+       (its 0.85rem font-size at the inherited 1.5 line-height, plus its
+       vertical padding). Keep these in sync if those components change. */
+    --card-row-height: calc(
+        var(--card-poster-height) + 10px + (var(--space-sm) * 2) + 2px
+    );
+    --track-row-height: calc(1.275rem + (var(--space-xs) * 2));
 
     color-scheme: dark;
     color: var(--color-text);

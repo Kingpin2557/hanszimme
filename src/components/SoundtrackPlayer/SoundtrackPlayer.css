@@ -38,7 +38,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
-    max-height: 260px;
+    /* Guarantee ~4.5 tracks visible before scrolling, capped at 6 so a long
+       tracklist can't push the rest of .c-detail past the sidebar's fixed
+       height (.o-sidebar clips with overflow: hidden). See
+       --track-row-height in index.css. */
+    min-height: calc(4.5 * var(--track-row-height) + 4 * var(--space-xs));
+    max-height: calc(6 * var(--track-row-height) + 5 * var(--space-xs));
     overflow-y: auto;
 }
 

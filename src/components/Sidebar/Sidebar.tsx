@@ -65,7 +65,7 @@ function SidebarContent({
     <>
       {children}
       {toolbar}
-      <div className="o-scroll o-flex">
+      <div className="o-scroll o-flex o-scroll--movies">
         {movies.map((m) => (
           <div
             key={m.id}

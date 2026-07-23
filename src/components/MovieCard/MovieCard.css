@@ -36,9 +36,12 @@
     }
 
     img {
-
-        width: calc(var(--poster-height) * 2 / 3);
-        height: calc(var(--poster-height) + 10px);
+        /* Smaller than the detail-view poster on purpose -- --card-poster-height
+           keeps the sidebar's movie list compact enough that
+           --card-row-height (index.css) can guarantee 2.5 rows visible in
+           .o-scroll--movies without the panel needing to be huge. */
+        width: calc(var(--card-poster-height) * 2 / 3);
+        height: calc(var(--card-poster-height) + 10px);
         object-fit: cover;
         border-radius: var(--radius-sm);
     }

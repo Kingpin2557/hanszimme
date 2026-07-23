@@ -10,4 +10,4 @@
  * from content.
  */
 export const PANEL_WIDTH = 700;
-export const PANEL_HEIGHT = 600;
+export const PANEL_HEIGHT = 740;
