@@ -13,6 +13,11 @@
     --font-display: "Montserrat", system-ui, Helvetica, Arial, sans-serif;
     --font-body: "Open Sans", system-ui, Helvetica, Arial, sans-serif;
 
+    /* Set at runtime by useViewportScale.ts, relative to its reference
+       resolution (1920x1080). Defaults to 1 so nothing breaks before the
+       hook's effect runs on first mount. */
+    --ui-scale: 1;
+
     --color-bg: hsl(0, 0%, 0%);
     --color-panel: hsl(0, 0%, 13%);
     --color-surface: hsl(0, 0%, 16%);
@@ -60,15 +65,22 @@
     --space-md: 1.5rem;
     --space-lg: 2rem;
 
-    /* Fixed sidepanel size -- single source of truth, kept in sync with
-       PANEL_WIDTH / PANEL_HEIGHT in src/constants/panel.ts. Height was
+    /* Reference sidepanel size -- single source of truth, kept in sync
+       with PANEL_WIDTH / PANEL_HEIGHT in src/constants/panel.ts. Height was
        bumped from 600 -> 740 so the movie-list and track-list scroll
        containers below have room to guarantee their minimum visible rows
        (see --card-row-height / --track-row-height and their usages in
-       App.css / SoundtrackPlayer.css). */
+       App.css / SoundtrackPlayer.css).
+
+       These stay literal (unscaled) so internal layout math elsewhere
+       (--card-row-height, etc.) keeps working against a stable box; the
+       panel's actual on-screen size is this box scaled visually via
+       `scale(var(--ui-scale))` on .o-sidebar (see Home.css). --sidebar-inset
+       is scaled directly here instead since it sits outside that
+       transformed box. */
     --sidebar-width: 700px;
     --sidebar-height: 740px;
-    --sidebar-inset: 50px;
+    --sidebar-inset: calc(50px * var(--ui-scale));
     --sidebar-padding: 20px;
     --badge-inset: 20px;
     --flag-width: 35px;

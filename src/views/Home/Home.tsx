@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useParams, useLoaderData } from "react-router-dom";
 import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
 import { useMapCamera, EARTH_ZOOM, FOCUS_ZOOM } from "../../hooks/useMapCamera";
+import { useViewportScale, zoomForScale } from "../../hooks/useViewportScale";
 import { usePanelDimensions } from "../../hooks/usePanelDimensions";
 import SidebarHeader from "../../components/SidebarHeader/SidebarHeader";
 import CandleMarker from "../../components/CandleMarker/CandleMarker";
@@ -13,13 +14,6 @@ import { isUnique, matchesCountry } from "../../script/utils/movieFiltes";
 import { type Movie, type Tour } from "../../types";
 import { type DetailLoaderData, fetchTours } from "../../loaders/loadMovies";
 import Sidebar from "../../components/Sidebar/Sidebar";
-
-const initialPos = {
-  longitude: 3.72,
-  latitude: 51.05,
-  zoom: EARTH_ZOOM,
-  padding: { top: 0, bottom: 0, left: 0, right: 750 },
-};
 
 const antPathDashes = (dash = 3, gap = 4, step = 0.5): number[][] => {
   const seq: number[][] = [];
@@ -42,6 +36,22 @@ function Home() {
   const [flyIndex, setFlyIndex] = useState<number | null>(null);
   const { movieSlug } = useParams();
   const [params, setParams] = useSearchParams();
+
+  // How far the actual render resolution is from the reference resolution
+  // the fixed-px sidebar/candles and EARTH_ZOOM/FOCUS_ZOOM were tuned
+  // against -- see useViewportScale.ts. Everything below that used to be a
+  // flat pixel or zoom literal is derived from this instead, so the layout
+  // holds up on the UE5 kiosk's actual (unknown ahead of time) resolution.
+  const scale = useViewportScale();
+  const earthZoom = zoomForScale(EARTH_ZOOM, scale);
+  const focusZoom = zoomForScale(FOCUS_ZOOM, scale);
+
+  const initialPos = {
+    longitude: 3.72,
+    latitude: 51.05,
+    zoom: earthZoom,
+    padding: { top: 0, bottom: 0, left: 0, right: 750 * scale },
+  };
 
   const iso = params.get("iso")?.toLowerCase() ?? "";
   const genre = params.get("genre") ?? "";
@@ -84,13 +94,15 @@ function Home() {
   }, []);
   const selectedTour = tours.find((t) => t.id === tourId);
 
-  // Log the panel's fixed width/height (from src/constants/panel.ts, the
-  // same numbers as --sidebar-width/--sidebar-height in index.css) on every
-  // view -- `panelViewKey` changes on navigation so a fresh line gets
-  // logged per view even though this component/element never unmounts
-  // between views.
+  // Log the panel's actual on-screen width/height (the reference numbers
+  // from src/constants/panel.ts scaled by `scale`, matching what the
+  // .o-sidebar `scale(var(--ui-scale))` transform renders) -- `panelViewKey`
+  // changes on navigation so a fresh line gets logged per view even though
+  // this component/element never unmounts between views, and re-logs
+  // whenever `scale` changes too (the kiosk's actual output size wasn't
+  // knowable before mount).
   const panelViewKey = `${mode}:${movieSlug ?? ""}:${selectedTour?.id ?? ""}`;
-  usePanelDimensions(panelViewKey);
+  usePanelDimensions(panelViewKey, scale);
 
   const deduped = allMovies.filter((m, i, self) => isUnique(m, i, self));
   const matchesGenre = (m: Movie) => !genre || m.genres.includes(genre);
@@ -171,7 +183,7 @@ function Home() {
     points = movieMarkers.map((m) => m.origin_country.coords);
     focusKey = `movies:${iso}:${points.length}`;
   }
-  useMapCamera(mapRef, focusKey, points);
+  useMapCamera(mapRef, focusKey, points, { earthZoom, focusZoom, scale });
 
   useEffect(() => {
     const map = mapRef.current?.getMap();
@@ -212,8 +224,8 @@ function Home() {
       const s = stops[i];
       map.flyTo({
         center: [s.coords.lng, s.coords.lat],
-        zoom: FOCUS_ZOOM,
-        padding: { top: 0, bottom: 0, left: 0, right: 700 },
+        zoom: focusZoom,
+        padding: { top: 0, bottom: 0, left: 0, right: 700 * scale },
         duration: 2000,
       });
       i += 1;

@@ -1,13 +1,14 @@
 /**
- * The sidepanel's fixed on-screen size. These are the single source of
- * truth for the panel's dimensions -- keep them in sync with
- * --sidebar-width / --sidebar-height in src/index.css, which apply the same
- * numbers to the actual `.o-sidebar` element.
+ * The sidepanel's reference size -- single source of truth, kept in sync
+ * with --sidebar-width / --sidebar-height in src/index.css, which apply the
+ * same numbers to the actual `.o-sidebar` element.
  *
- * Any component or hook that needs the panel's width/height as numbers
- * (e.g. to report them to an embedding host) should import these constants
- * instead of measuring the DOM -- the size is fixed by design, not derived
- * from content.
+ * These are NOT the panel's actual on-screen size: `.o-sidebar` is visually
+ * scaled by `scale(var(--ui-scale))` (see App.css) so it matches whatever
+ * resolution the UE5 kiosk's Web Browser Widget actually renders at -- see
+ * src/hooks/useViewportScale.ts for why. Anything that needs the panel's
+ * real footprint (e.g. usePanelDimensions.ts, reporting it to UE5) must
+ * multiply these by that scale factor rather than using them directly.
  */
 export const PANEL_WIDTH = 700;
 export const PANEL_HEIGHT = 740;

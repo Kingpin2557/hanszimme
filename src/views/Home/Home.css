@@ -40,6 +40,6 @@
 }
 
 .c-stop[data-current] .c-candle {
-    transform: scale(1.7);
+    transform: scale(calc(1.7 * var(--ui-scale)));
     filter: drop-shadow(0 0 16px var(--flame-glow));
 }

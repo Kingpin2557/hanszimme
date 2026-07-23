@@ -42,7 +42,12 @@ header {
     position: absolute;
     top: 50%;
     right: var(--sidebar-inset);
-    transform: translateY(-50%);
+    /* Scales the whole panel (text, art, candles inside it, everything) to
+       match the actual render resolution -- see useViewportScale.ts. The
+       panel's right edge is the anchor so it grows/shrinks toward the
+       screen's center rather than drifting off-edge. */
+    transform: translateY(-50%) scale(var(--ui-scale));
+    transform-origin: right center;
 
     width: var(--sidebar-width);
     height: var(--sidebar-height);

@@ -4,13 +4,18 @@
     align-items: center;
     cursor: pointer;
     filter: drop-shadow(0 0 6px var(--flame-glow));
+    /* Scales the candle to match the actual render resolution -- see
+       useViewportScale.ts. Every other transform on this element (hover,
+       the tour "current stop" state in Home.css) multiplies this in rather
+       than replacing it, so the resolution scale always applies. */
+    transform: scale(var(--ui-scale));
     transition:
         transform var(--transition),
         opacity 0.6s ease;
 }
 
 .c-candle:hover {
-    transform: scale(1.2);
+    transform: scale(calc(1.2 * var(--ui-scale)));
 }
 
 .c-candle__flame {
